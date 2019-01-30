@@ -102,3 +102,30 @@ impl Iterator for InputStream {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{ReaderSource, InputStream};
+    use csv::ByteRecord;
+
+    #[test]
+    fn test_read_concatenated() {
+        let filenames = ["test/assets/1.csv", "test/assets/2.csv"];
+        let mut input_stream: InputStream = filenames
+            .iter()
+            .filter_map(|f| {
+                Some(ReaderSource {
+                    reader: csv::Reader::from_path(f).unwrap(),
+                    path: f.to_string(),
+                })
+            })
+            .collect();
+
+        assert_eq!(*input_stream.headers(), ByteRecord::from(vec!["a", "b", "_source"]));
+
+        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["1", "3", "test/assets/1.csv"])));
+        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["5", "2", "test/assets/1.csv"])));
+        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["2", "2", "test/assets/2.csv"])));
+        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["4", "3", "test/assets/2.csv"])));
+    }
+}
