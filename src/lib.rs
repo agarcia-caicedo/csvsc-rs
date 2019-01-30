@@ -1,8 +1,8 @@
-pub mod input;
 pub mod columns;
+pub mod input;
 
-pub use input::InputStream;
 pub use columns::AddColumns;
+pub use input::InputStream;
 
 #[cfg(test)]
 mod tests {
