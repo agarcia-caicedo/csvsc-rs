@@ -3,6 +3,7 @@ use std::io;
 
 use csvsc::InputStream;
 use csvsc::AddColumns;
+use csvsc::input::ReaderSource;
 
 fn main() {
     let matches = App::new("csvsc")
@@ -69,7 +70,7 @@ fn main() {
 
     let input_stream: InputStream = filenames.iter().filter_map(|f| {
         match csv::Reader::from_path(f) {
-            Ok(reader) => Some(reader),
+            Ok(reader) => Some(ReaderSource{ reader, path: f.to_string()}),
             Err(e) => {
                 match e.kind() {
                     csv::ErrorKind::Io(error) => match error.kind() {
@@ -84,6 +85,8 @@ fn main() {
             },
         }
     }).collect();
+
+    dbg!(input_stream.headers());
 
     for line in input_stream {
         dbg!(line);
