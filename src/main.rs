@@ -68,7 +68,7 @@ fn main() {
     let filenames: Vec<_> = matches.values_of("input").unwrap().collect();
     let encoding = matches.value_of("encoding").unwrap();
 
-    let ra:InputStream<std::fs::File> = filenames.iter().filter_map(|f| {
+    let ra:InputStream = filenames.iter().filter_map(|f| {
         match csv::Reader::from_path(f) {
             Ok(reader) => Some(reader),
             Err(e) => {
