@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use std::io;
 
 use csvsc::InputStream;
+use csvsc::AddColumns;
 
 fn main() {
     let matches = App::new("csvsc")
@@ -63,12 +64,10 @@ fn main() {
         .get_matches();
 
     // Step 1. Get the source
-    // let input_stream = InputStream::from(filenames, );
-
     let filenames: Vec<_> = matches.values_of("input").unwrap().collect();
     let encoding = matches.value_of("encoding").unwrap();
 
-    let ra:InputStream = filenames.iter().filter_map(|f| {
+    let input_stream: InputStream = filenames.iter().filter_map(|f| {
         match csv::Reader::from_path(f) {
             Ok(reader) => Some(reader),
             Err(e) => {
@@ -86,11 +85,13 @@ fn main() {
         }
     }).collect();
 
-    for line in ra {
+    for line in input_stream {
         dbg!(line);
     }
 
     // Step 2. Map the info, add/remove, transform each row
+    // let columns: Vec<_> = matches.values_of("add_columns").unwrap().collect();
+    // let add_columns = AddColumns::new(input_stream, columns);
     // mapper = Mapper(input_stream, add_columns=self.add_columns)
 
     // Step 3. Stablish destination

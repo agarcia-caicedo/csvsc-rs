@@ -66,9 +66,10 @@ impl Iterator for InputStream {
                         if new_headers != *headers {
                             panic!("Inconsistent headers among files");
                         }
+                    } else {
+                        self.headers = Some(new_headers);
                     }
 
-                    self.headers = Some(new_headers);
                     self.current_reader = Some(reader.into_byte_records());
 
                     self.next()
