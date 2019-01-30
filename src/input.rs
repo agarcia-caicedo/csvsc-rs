@@ -43,7 +43,13 @@ impl Iterator for InputStream {
         match &mut self.current_reader {
             Some(records) => {
                 match records.next() {
-                    Some(Ok(reg)) => Some(reg),
+                    Some(Ok(reg)) => {
+                        if reg.len() != self.headers.as_ref().unwrap().len() {
+                            panic!("Inconsistent size of rows");
+                        }
+
+                        Some(reg)
+                    },
                     Some(Err(e)) => self.next(), // TODO warn something here
                     None => {
                         self.current_reader = None;
@@ -54,7 +60,15 @@ impl Iterator for InputStream {
             },
             None => match self.readers.pop() {
                 Some(mut reader) => {
-                    self.headers = Some(reader.byte_headers().unwrap().clone());
+                    let new_headers = reader.byte_headers().unwrap().clone();
+
+                    if let Some(ref headers) = self.headers {
+                        if new_headers != *headers {
+                            panic!("Inconsistent headers among files");
+                        }
+                    }
+
+                    self.headers = Some(new_headers);
                     self.current_reader = Some(reader.into_byte_records());
 
                     self.next()
