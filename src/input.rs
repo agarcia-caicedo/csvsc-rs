@@ -9,18 +9,38 @@ pub struct ReaderSource {
     pub path: String,
 }
 
+impl ReaderSource {
+    fn headers(&mut self) -> ByteRecord {
+        let mut headers = self.reader.byte_headers().unwrap().clone();
+
+        headers.push_field(b"_source");
+
+        headers
+    }
+}
+
+pub struct ByteRecordsIntoIterSource {
+    pub records: ByteRecordsIntoIter<File>,
+    pub path: String,
+}
+
 pub struct InputStream {
     readers: Vec<ReaderSource>,
-    current_reader: ByteRecordsIntoIter<File>,
+    current_records: ByteRecordsIntoIterSource,
     headers: ByteRecord,
 }
 
 impl InputStream {
-    fn new(ReaderSource { mut reader, path }: ReaderSource) -> InputStream {
+    fn new(mut reader_source: ReaderSource) -> InputStream {
+        let headers = reader_source.headers();
+
         InputStream {
             readers: Vec::new(),
-            headers: reader.byte_headers().unwrap().clone(),
-            current_reader: reader.into_byte_records(),
+            headers,
+            current_records: ByteRecordsIntoIterSource{
+                path: reader_source.path,
+                records: reader_source.reader.into_byte_records(),
+            },
         }
     }
 
@@ -51,8 +71,10 @@ impl Iterator for InputStream {
     type Item = ByteRecord;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.current_reader.next() {
-            Some(Ok(reg)) => {
+        match self.current_records.records.next() {
+            Some(Ok(mut reg)) => {
+                reg.push_field(self.current_records.path.as_bytes());
+
                 if reg.len() != self.headers.len() {
                     panic!("Inconsistent size of rows");
                 }
@@ -62,13 +84,16 @@ impl Iterator for InputStream {
             Some(Err(e)) => self.next(), // TODO warn something here
             None => match self.readers.pop() {
                 Some(mut rs) => {
-                    let new_headers = rs.reader.byte_headers().unwrap().clone();
+                    let new_headers = rs.headers();
 
                     if new_headers != self.headers {
                         panic!("Inconsistent headers among files");
                     }
 
-                    self.current_reader = rs.reader.into_byte_records();
+                    self.current_records = ByteRecordsIntoIterSource{
+                        path: rs.path,
+                        records: rs.reader.into_byte_records(),
+                    };
 
                     self.next()
                 }
