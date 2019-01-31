@@ -5,6 +5,7 @@ use csvsc::input::ReaderSource;
 use csvsc::AddColumns;
 use csvsc::InputStream;
 use csvsc::columns::ColSpec;
+use encoding::label::encoding_from_whatwg_label;
 
 fn main() {
     let matches = App::new("csvsc")
@@ -74,7 +75,7 @@ fn main() {
 
     // Step 1. Get the source
     let filenames: Vec<_> = matches.values_of("input").unwrap().collect();
-    let encoding = matches.value_of("encoding").unwrap();
+    let encoding = encoding_from_whatwg_label(matches.value_of("encoding").unwrap()).expect("Invalid encoding, check whatwg list");
 
     let input_stream: InputStream = filenames
         .iter()
@@ -82,6 +83,7 @@ fn main() {
             Ok(reader) => Some(ReaderSource {
                 reader,
                 path: f.to_string(),
+                encoding: encoding,
             }),
             Err(e) => {
                 match e.kind() {

@@ -1,20 +1,34 @@
-use csv::ByteRecordsIntoIter;
+use csv::{ByteRecord, ByteRecordsIntoIter};
 use csv::Reader;
 use std::fs::File;
 use std::iter::FromIterator;
+use encoding::all::ISO_8859_1;
+use encoding::EncodingRef;
+use std::clone::Clone;
 
 use super::Row;
+
+fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
+    let row = Row::with_capacity(data.as_slice().len(), data.len());
+
+    for item in data.iter() {
+    }
+
+    row
+}
 
 pub struct ReaderSource {
     pub reader: Reader<File>,
     pub path: String,
+    pub encoding: EncodingRef,
 }
 
 impl ReaderSource {
     fn headers(&mut self) -> Row {
-        let mut headers = self.reader.byte_headers().unwrap().clone();
+        let data = self.reader.byte_headers().unwrap().clone();
+        let mut headers = decode(data, self.encoding);
 
-        headers.push_field(b"_source");
+        headers.push_field("_source");
 
         headers
     }
@@ -23,6 +37,7 @@ impl ReaderSource {
 pub struct ByteRecordsIntoIterSource {
     pub records: ByteRecordsIntoIter<File>,
     pub path: String,
+    pub encoding: EncodingRef,
 }
 
 pub struct InputStream {
@@ -38,9 +53,10 @@ impl InputStream {
         InputStream {
             readers: Vec::new(),
             headers,
-            current_records: ByteRecordsIntoIterSource{
+            current_records: ByteRecordsIntoIterSource {
                 path: reader_source.path,
                 records: reader_source.reader.into_byte_records(),
+                encoding: reader_source.encoding,
             },
         }
     }
@@ -73,14 +89,15 @@ impl Iterator for InputStream {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_records.records.next() {
-            Some(Ok(mut reg)) => {
-                reg.push_field(self.current_records.path.as_bytes());
+            Some(Ok(reg)) => {
+                let mut str_reg = decode(reg, self.current_records.encoding);
+                str_reg.push_field(&self.current_records.path);
 
-                if reg.len() != self.headers.len() {
+                if str_reg.len() != self.headers.len() {
                     panic!("Inconsistent size of rows");
                 }
 
-                Some(reg)
+                Some(str_reg)
             }
             Some(Err(e)) => self.next(), // TODO warn something here
             None => match self.readers.pop() {
@@ -94,6 +111,7 @@ impl Iterator for InputStream {
                     self.current_records = ByteRecordsIntoIterSource{
                         path: rs.path,
                         records: rs.reader.into_byte_records(),
+                        encoding: rs.encoding,
                     };
 
                     self.next()
@@ -106,8 +124,8 @@ impl Iterator for InputStream {
 
 #[cfg(test)]
 mod tests {
-    use super::{ReaderSource, InputStream};
-    use super::Row;
+    use super::{ReaderSource, InputStream, Row};
+    use encoding::all::{UTF_8, WINDOWS_1252};
 
     #[test]
     fn test_read_concatenated() {
@@ -118,6 +136,7 @@ mod tests {
                 Some(ReaderSource {
                     reader: csv::Reader::from_path(f).unwrap(),
                     path: f.to_string(),
+                    encoding: UTF_8,
                 })
             })
             .collect();
@@ -128,5 +147,24 @@ mod tests {
         assert_eq!(input_stream.next(), Some(Row::from(vec!["5", "2", "test/assets/1.csv"])));
         assert_eq!(input_stream.next(), Some(Row::from(vec!["2", "2", "test/assets/2.csv"])));
         assert_eq!(input_stream.next(), Some(Row::from(vec!["4", "3", "test/assets/2.csv"])));
+    }
+
+    #[test]
+    fn different_encoding() {
+        let filenames = ["test/assets/windows1252/data.csv"];
+        let mut input_stream: InputStream = filenames
+            .iter()
+            .filter_map(|f| {
+                Some(ReaderSource {
+                    reader: csv::Reader::from_path(f).unwrap(),
+                    path: f.to_string(),
+                    encoding: WINDOWS_1252,
+                })
+            })
+            .collect();
+
+        assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
+
+        assert_eq!(input_stream.next(), Some(Row::from(vec!["árbol", "test/assets/windows1252/data.csv"])));
     }
 }

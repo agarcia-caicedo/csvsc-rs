@@ -8,7 +8,7 @@ impl ColSpec {
         ColSpec{}
     }
 
-    pub fn compute(&self, data: &Row) -> Vec<&[u8]> {
+    pub fn compute(&self, data: &Row) -> Vec<&str> {
         Vec::new()
     }
 }
@@ -52,10 +52,10 @@ mod tests {
     #[test]
     fn test_add_columns() {
         let mut add_columns = AddColumns::new(vec![
-            Row::from(vec!["1", "40", "_source", "/tmp/a1m.csv"]),
-            Row::from(vec!["2", "39", "_source", "/tmp/a1m.csv"]),
-            Row::from(vec!["3", "38", "_source", "/tmp/a2m.csv"]),
-            Row::from(vec!["4", "37", "_source", "/tmp/a2m.csv"]),
+            Row::from(vec!["1", "40", "/tmp/a1m.csv"]),
+            Row::from(vec!["2", "39", "/tmp/a1m.csv"]),
+            Row::from(vec!["3", "38", "/tmp/a2m.csv"]),
+            Row::from(vec!["4", "37", "/tmp/a2m.csv"]),
         ].into_iter(), vec![ColSpec::new("regex:_source:$1:a([0-9]+)m\\.csv$")]);
 
         assert_eq!(add_columns.next(), Some(Row::from(vec!["1", "40", "1"])));
