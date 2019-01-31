@@ -3,15 +3,16 @@ use csv::Reader;
 use std::fs::File;
 use std::iter::FromIterator;
 use encoding::all::ISO_8859_1;
-use encoding::EncodingRef;
+use encoding::{EncodingRef, DecoderTrap};
 use std::clone::Clone;
 
 use super::Row;
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
-    let row = Row::with_capacity(data.as_slice().len(), data.len());
+    let mut row = Row::with_capacity(data.as_slice().len(), data.len());
 
     for item in data.iter() {
+        row.push_field(&encoding.decode(item, DecoderTrap::Replace).unwrap());
     }
 
     row
