@@ -1,10 +1,10 @@
 use clap::{App, Arg};
 use std::io;
 
+use csvsc::columns::ColSpec;
 use csvsc::input::ReaderSource;
 use csvsc::AddColumns;
 use csvsc::InputStream;
-use csvsc::columns::ColSpec;
 use encoding::label::encoding_from_whatwg_label;
 
 fn main() {
@@ -75,7 +75,8 @@ fn main() {
 
     // Step 1. Get the source
     let filenames: Vec<_> = matches.values_of("input").unwrap().collect();
-    let encoding = encoding_from_whatwg_label(matches.value_of("encoding").unwrap()).expect("Invalid encoding, check whatwg list");
+    let encoding = encoding_from_whatwg_label(matches.value_of("encoding").unwrap())
+        .expect("Invalid encoding, check whatwg list");
 
     let input_stream: InputStream = filenames
         .iter()
@@ -101,10 +102,13 @@ fn main() {
         .collect();
 
     // Step 2. Map the info, add/remove, transform each row
-    let add_columns = AddColumns::new(input_stream, match matches.values_of("add_columns") {
-        Some(columns) => columns.map(|s| ColSpec::new(s)).collect(),
-        None => Vec::new(),
-    });
+    let add_columns = AddColumns::new(
+        input_stream,
+        match matches.values_of("add_columns") {
+            Some(columns) => columns.map(|s| ColSpec::new(s)).collect(),
+            None => Vec::new(),
+        },
+    );
     // mapper = Mapper(input_stream, add_columns=self.add_columns)
 
     // Step 3. Stablish destination

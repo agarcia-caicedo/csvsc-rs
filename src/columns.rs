@@ -1,11 +1,10 @@
-use super::{Row};
+use super::Row;
 
-pub struct ColSpec {
-}
+pub struct ColSpec {}
 
 impl ColSpec {
-    pub fn new(spec:  &str) -> ColSpec {
-        ColSpec{}
+    pub fn new(spec: &str) -> ColSpec {
+        ColSpec {}
     }
 
     pub fn compute(&self, data: &Row) -> Vec<&str> {
@@ -18,16 +17,13 @@ pub struct AddColumns<T> {
     columns: Vec<ColSpec>,
 }
 
-impl<T:Iterator<Item=Row>> AddColumns<T> {
+impl<T: Iterator<Item = Row>> AddColumns<T> {
     pub fn new(iter: T, columns: Vec<ColSpec>) -> AddColumns<T> {
-        AddColumns {
-            iter,
-            columns,
-        }
+        AddColumns { iter, columns }
     }
 }
 
-impl<T:Iterator<Item=Row>> Iterator for AddColumns<T> {
+impl<T: Iterator<Item = Row>> Iterator for AddColumns<T> {
     type Item = Row;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -51,12 +47,16 @@ mod tests {
 
     #[test]
     fn test_add_columns() {
-        let mut add_columns = AddColumns::new(vec![
-            Row::from(vec!["1", "40", "/tmp/a1m.csv"]),
-            Row::from(vec!["2", "39", "/tmp/a1m.csv"]),
-            Row::from(vec!["3", "38", "/tmp/a2m.csv"]),
-            Row::from(vec!["4", "37", "/tmp/a2m.csv"]),
-        ].into_iter(), vec![ColSpec::new("regex:_source:$1:a([0-9]+)m\\.csv$")]);
+        let mut add_columns = AddColumns::new(
+            vec![
+                Row::from(vec!["1", "40", "/tmp/a1m.csv"]),
+                Row::from(vec!["2", "39", "/tmp/a1m.csv"]),
+                Row::from(vec!["3", "38", "/tmp/a2m.csv"]),
+                Row::from(vec!["4", "37", "/tmp/a2m.csv"]),
+            ]
+            .into_iter(),
+            vec![ColSpec::new("regex:_source:$1:a([0-9]+)m\\.csv$")],
+        );
 
         assert_eq!(add_columns.next(), Some(Row::from(vec!["1", "40", "1"])));
         assert_eq!(add_columns.next(), Some(Row::from(vec!["2", "39", "1"])));

@@ -1,10 +1,10 @@
-use csv::{ByteRecord, ByteRecordsIntoIter};
 use csv::Reader;
+use csv::{ByteRecord, ByteRecordsIntoIter};
+use encoding::all::ISO_8859_1;
+use encoding::{DecoderTrap, EncodingRef};
+use std::clone::Clone;
 use std::fs::File;
 use std::iter::FromIterator;
-use encoding::all::ISO_8859_1;
-use encoding::{EncodingRef, DecoderTrap};
-use std::clone::Clone;
 
 use super::Row;
 
@@ -109,7 +109,7 @@ impl Iterator for InputStream {
                         panic!("Inconsistent headers among files");
                     }
 
-                    self.current_records = ByteRecordsIntoIterSource{
+                    self.current_records = ByteRecordsIntoIterSource {
                         path: rs.path,
                         records: rs.reader.into_byte_records(),
                         encoding: rs.encoding,
@@ -125,7 +125,7 @@ impl Iterator for InputStream {
 
 #[cfg(test)]
 mod tests {
-    use super::{ReaderSource, InputStream, Row};
+    use super::{InputStream, ReaderSource, Row};
     use encoding::all::{UTF_8, WINDOWS_1252};
 
     #[test]
@@ -142,12 +142,27 @@ mod tests {
             })
             .collect();
 
-        assert_eq!(*input_stream.headers(), Row::from(vec!["a", "b", "_source"]));
+        assert_eq!(
+            *input_stream.headers(),
+            Row::from(vec!["a", "b", "_source"])
+        );
 
-        assert_eq!(input_stream.next(), Some(Row::from(vec!["1", "3", "test/assets/1.csv"])));
-        assert_eq!(input_stream.next(), Some(Row::from(vec!["5", "2", "test/assets/1.csv"])));
-        assert_eq!(input_stream.next(), Some(Row::from(vec!["2", "2", "test/assets/2.csv"])));
-        assert_eq!(input_stream.next(), Some(Row::from(vec!["4", "3", "test/assets/2.csv"])));
+        assert_eq!(
+            input_stream.next(),
+            Some(Row::from(vec!["1", "3", "test/assets/1.csv"]))
+        );
+        assert_eq!(
+            input_stream.next(),
+            Some(Row::from(vec!["5", "2", "test/assets/1.csv"]))
+        );
+        assert_eq!(
+            input_stream.next(),
+            Some(Row::from(vec!["2", "2", "test/assets/2.csv"]))
+        );
+        assert_eq!(
+            input_stream.next(),
+            Some(Row::from(vec!["4", "3", "test/assets/2.csv"]))
+        );
     }
 
     #[test]
@@ -166,6 +181,12 @@ mod tests {
 
         assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
 
-        assert_eq!(input_stream.next(), Some(Row::from(vec!["árbol", "test/assets/windows1252/data.csv"])));
+        assert_eq!(
+            input_stream.next(),
+            Some(Row::from(vec![
+                "árbol",
+                "test/assets/windows1252/data.csv"
+            ]))
+        );
     }
 }
