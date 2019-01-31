@@ -4,6 +4,7 @@ use std::io;
 use csvsc::input::ReaderSource;
 use csvsc::AddColumns;
 use csvsc::InputStream;
+use csvsc::columns::ColSpec;
 
 fn main() {
     let matches = App::new("csvsc")
@@ -97,15 +98,11 @@ fn main() {
         })
         .collect();
 
-    dbg!(input_stream.headers());
-
-    for line in input_stream {
-        dbg!(line);
-    }
-
     // Step 2. Map the info, add/remove, transform each row
-    // let columns: Vec<_> = matches.values_of("add_columns").unwrap().collect();
-    // let add_columns = AddColumns::new(input_stream, columns);
+    let add_columns = AddColumns::new(input_stream, match matches.values_of("add_columns") {
+        Some(columns) => columns.map(|s| ColSpec::new(s)).collect(),
+        None => Vec::new(),
+    });
     // mapper = Mapper(input_stream, add_columns=self.add_columns)
 
     // Step 3. Stablish destination

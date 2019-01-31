@@ -1,8 +1,9 @@
-use csv::ByteRecord;
 use csv::ByteRecordsIntoIter;
 use csv::Reader;
 use std::fs::File;
 use std::iter::FromIterator;
+
+use super::Row;
 
 pub struct ReaderSource {
     pub reader: Reader<File>,
@@ -10,7 +11,7 @@ pub struct ReaderSource {
 }
 
 impl ReaderSource {
-    fn headers(&mut self) -> ByteRecord {
+    fn headers(&mut self) -> Row {
         let mut headers = self.reader.byte_headers().unwrap().clone();
 
         headers.push_field(b"_source");
@@ -27,7 +28,7 @@ pub struct ByteRecordsIntoIterSource {
 pub struct InputStream {
     readers: Vec<ReaderSource>,
     current_records: ByteRecordsIntoIterSource,
-    headers: ByteRecord,
+    headers: Row,
 }
 
 impl InputStream {
@@ -48,7 +49,7 @@ impl InputStream {
         self.readers.push(item);
     }
 
-    pub fn headers(&self) -> &ByteRecord {
+    pub fn headers(&self) -> &Row {
         &self.headers
     }
 }
@@ -68,7 +69,7 @@ impl FromIterator<ReaderSource> for InputStream {
 }
 
 impl Iterator for InputStream {
-    type Item = ByteRecord;
+    type Item = Row;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_records.records.next() {
@@ -106,7 +107,7 @@ impl Iterator for InputStream {
 #[cfg(test)]
 mod tests {
     use super::{ReaderSource, InputStream};
-    use csv::ByteRecord;
+    use super::Row;
 
     #[test]
     fn test_read_concatenated() {
@@ -121,11 +122,11 @@ mod tests {
             })
             .collect();
 
-        assert_eq!(*input_stream.headers(), ByteRecord::from(vec!["a", "b", "_source"]));
+        assert_eq!(*input_stream.headers(), Row::from(vec!["a", "b", "_source"]));
 
-        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["1", "3", "test/assets/1.csv"])));
-        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["5", "2", "test/assets/1.csv"])));
-        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["2", "2", "test/assets/2.csv"])));
-        assert_eq!(input_stream.next(), Some(ByteRecord::from(vec!["4", "3", "test/assets/2.csv"])));
+        assert_eq!(input_stream.next(), Some(Row::from(vec!["1", "3", "test/assets/1.csv"])));
+        assert_eq!(input_stream.next(), Some(Row::from(vec!["5", "2", "test/assets/1.csv"])));
+        assert_eq!(input_stream.next(), Some(Row::from(vec!["2", "2", "test/assets/2.csv"])));
+        assert_eq!(input_stream.next(), Some(Row::from(vec!["4", "3", "test/assets/2.csv"])));
     }
 }
