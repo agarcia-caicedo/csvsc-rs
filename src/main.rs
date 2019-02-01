@@ -78,10 +78,10 @@ fn main() {
     let encoding = encoding_from_whatwg_label(matches.value_of("encoding").unwrap())
         .expect("Invalid encoding, check whatwg list");
 
-    let input_stream: InputStream = filenames
+    let input_stream = InputStream::from_readers(filenames
         .iter()
         .filter_map(|f| match csv::Reader::from_path(f) {
-            Ok(reader) => Some(ReaderSource::from_reader(reader, f, encoding)),
+            Ok(reader) => Some(ReaderSource::from_reader(reader, f)),
 
             Err(e) => {
                 match e.kind() {
@@ -95,8 +95,7 @@ fn main() {
 
                 None
             }
-        })
-        .collect();
+        }), encoding);
 
     // Step 2. Map the info, add/remove, transform each row
     let add_columns = AddColumns::new(
