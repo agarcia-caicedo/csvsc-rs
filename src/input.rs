@@ -5,6 +5,7 @@ use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
 use std::fs::File;
 use std::iter::FromIterator;
+use std::path::Path;
 
 use super::Row;
 
@@ -25,6 +26,17 @@ pub struct ReaderSource {
 }
 
 impl ReaderSource {
+    pub fn from_path<P: AsRef<Path>>(path: P, encoding: EncodingRef) -> ReaderSource {
+        ReaderSource {
+            // FIXME: return an error, don't unwrap
+            reader: csv::Reader::from_path(&path).unwrap(),
+            // FIXME: if the path is really needed later, it should be stored as PathBuf,
+            // not a String
+            path: path.as_ref().to_string_lossy().to_string(),
+            encoding,
+        }
+    }
+
     fn headers(&mut self) -> Row {
         let data = self.reader.byte_headers().unwrap().clone();
         let mut headers = decode(data, self.encoding);
@@ -133,13 +145,7 @@ mod tests {
         let filenames = ["test/assets/1.csv", "test/assets/2.csv"];
         let mut input_stream: InputStream = filenames
             .iter()
-            .filter_map(|f| {
-                Some(ReaderSource {
-                    reader: csv::Reader::from_path(f).unwrap(),
-                    path: f.to_string(),
-                    encoding: UTF_8,
-                })
-            })
+            .filter_map(|f| Some(ReaderSource::from_path(f, UTF_8)))
             .collect();
 
         assert_eq!(
@@ -170,13 +176,7 @@ mod tests {
         let filenames = ["test/assets/windows1252/data.csv"];
         let mut input_stream: InputStream = filenames
             .iter()
-            .filter_map(|f| {
-                Some(ReaderSource {
-                    reader: csv::Reader::from_path(f).unwrap(),
-                    path: f.to_string(),
-                    encoding: WINDOWS_1252,
-                })
-            })
+            .filter_map(|f| Some(ReaderSource::from_path(f, WINDOWS_1252)))
             .collect();
 
         assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
