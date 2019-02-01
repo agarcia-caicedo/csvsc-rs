@@ -62,9 +62,9 @@ impl ReaderSource {
 }
 
 pub struct ByteRecordsIntoIterSource {
-    pub records: ByteRecordsIntoIter<File>,
-    pub path: String,
-    pub encoding: EncodingRef,
+    records: ByteRecordsIntoIter<File>,
+    path: String,
+    encoding: EncodingRef,
 }
 
 impl ByteRecordsIntoIterSource {
