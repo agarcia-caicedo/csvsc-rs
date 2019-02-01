@@ -5,7 +5,7 @@ use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
 use std::fs::File;
 use std::iter::FromIterator;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::error::{Error, RowResult};
 
@@ -27,10 +27,7 @@ pub struct ReaderSource {
 }
 
 impl ReaderSource {
-    pub fn from_reader<P: AsRef<Path>>(
-        reader: Reader<File>,
-        path: P,
-    ) -> ReaderSource {
+    pub fn from_reader<P: AsRef<Path>>(reader: Reader<File>, path: P) -> ReaderSource {
         ReaderSource {
             reader,
             // FIXME: if the path is really needed later, it should be stored as PathBuf,
@@ -39,9 +36,7 @@ impl ReaderSource {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<ReaderSource, csv::Error> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<ReaderSource, csv::Error> {
         Ok(ReaderSource::from_reader(
             csv::Reader::from_path(&path)?,
             path,
@@ -66,11 +61,14 @@ pub struct InputStream {
 
 impl InputStream {
     pub fn from_readers<I>(readers: I, encoding: EncodingRef) -> InputStream
-        where I: IntoIterator<Item = ReaderSource>
+    where
+        I: IntoIterator<Item = ReaderSource>,
     {
         let mut iter = readers.into_iter();
-        let mut input_stream: InputStream =
-            InputStream::new(iter.next().expect("At least one input is required"), encoding);
+        let mut input_stream: InputStream = InputStream::new(
+            iter.next().expect("At least one input is required"),
+            encoding,
+        );
 
         for item in iter {
             input_stream.add(item);
@@ -108,7 +106,9 @@ impl Iterator for InputStream {
                 str_reg.push_field(&self.current_path);
 
                 if str_reg.len() != self.headers.len() {
-                    panic!("Inconsistent size of rows");
+                    return Some(Err(Error::InconsistentSizeOfRows(PathBuf::from(
+                        &self.current_path,
+                    ))));
                 }
 
                 Some(Ok(str_reg))
@@ -121,7 +121,7 @@ impl Iterator for InputStream {
                     let new_headers = decode(rs.headers(), self.encoding);
 
                     if new_headers != self.headers {
-                        panic!("Inconsistent headers among files");
+                        return Some(Err(Error::InconsistentHeaders(PathBuf::from(rs.path))));
                     }
 
                     self.current_records = rs.reader.into_byte_records();
@@ -139,14 +139,21 @@ impl Iterator for InputStream {
 #[cfg(test)]
 mod tests {
     use super::{InputStream, ReaderSource, Row};
+    use crate::error::Error;
     use encoding::all::{UTF_8, WINDOWS_1252};
+
+    use std::path::PathBuf;
+    use std::str::FromStr;
 
     #[test]
     fn test_read_concatenated() {
         let filenames = ["test/assets/1.csv", "test/assets/2.csv"];
-        let mut input_stream = InputStream::from_readers(filenames
-            .iter()
-            .filter_map(|f| Some(ReaderSource::from_path(f).unwrap())), UTF_8);
+        let mut input_stream = InputStream::from_readers(
+            filenames
+                .iter()
+                .filter_map(|f| Some(ReaderSource::from_path(f).unwrap())),
+            UTF_8,
+        );
 
         assert_eq!(
             *input_stream.headers(),
@@ -174,18 +181,39 @@ mod tests {
     #[test]
     fn different_encoding() {
         let filenames = ["test/assets/windows1252/data.csv"];
-        let mut input_stream = InputStream::from_readers(filenames
-            .iter()
-            .filter_map(|f| Some(ReaderSource::from_path(f).unwrap())), WINDOWS_1252);
+        let mut input_stream = InputStream::from_readers(
+            filenames
+                .iter()
+                .filter_map(|f| Some(ReaderSource::from_path(f).unwrap())),
+            WINDOWS_1252,
+        );
 
         assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
 
         assert_eq!(
             input_stream.next().unwrap().unwrap(),
-            Row::from(vec![
-                "árbol",
-                "test/assets/windows1252/data.csv"
-            ])
+            Row::from(vec!["árbol", "test/assets/windows1252/data.csv"])
         );
+    }
+
+    #[test]
+    fn detects_inconsistent_headers() {
+        let filenames = ["test/assets/1.csv", "test/assets/3.csv"];
+        let input_stream = InputStream::from_readers(
+            filenames
+                .iter()
+                .filter_map(|f| Some(ReaderSource::from_path(f).unwrap())),
+            UTF_8,
+        );
+
+        match input_stream.skip(2).next() {
+            Some(Err(Error::InconsistentHeaders(ref p)))
+                if *p == PathBuf::from_str("test/assets/3.csv").unwrap() =>
+            {
+                ()
+            }
+
+            x => unreachable!("{:?}", x),
+        }
     }
 }
