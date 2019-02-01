@@ -67,6 +67,16 @@ pub struct ByteRecordsIntoIterSource {
     pub encoding: EncodingRef,
 }
 
+impl ByteRecordsIntoIterSource {
+    pub fn from_source(source: ReaderSource) -> ByteRecordsIntoIterSource {
+        ByteRecordsIntoIterSource {
+            records: source.reader.into_byte_records(),
+            path: source.path.clone(),
+            encoding: source.encoding,
+        }
+    }
+}
+
 pub struct InputStream {
     readers: Vec<ReaderSource>,
     current_records: ByteRecordsIntoIterSource,
@@ -80,11 +90,7 @@ impl InputStream {
         InputStream {
             readers: Vec::new(),
             headers,
-            current_records: ByteRecordsIntoIterSource {
-                path: reader_source.path,
-                records: reader_source.reader.into_byte_records(),
-                encoding: reader_source.encoding,
-            },
+            current_records: ByteRecordsIntoIterSource::from_source(reader_source),
         }
     }
 
@@ -135,11 +141,7 @@ impl Iterator for InputStream {
                         panic!("Inconsistent headers among files");
                     }
 
-                    self.current_records = ByteRecordsIntoIterSource {
-                        path: rs.path,
-                        records: rs.reader.into_byte_records(),
-                        encoding: rs.encoding,
-                    };
+                    self.current_records = ByteRecordsIntoIterSource::from_source(rs);
 
                     self.next()
                 }
