@@ -41,14 +41,8 @@ impl ReaderSource {
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P, encoding: EncodingRef) -> ReaderSource {
-        ReaderSource {
-            // FIXME: return an error, don't unwrap
-            reader: csv::Reader::from_path(&path).unwrap(),
-            // FIXME: if the path is really needed later, it should be stored as PathBuf,
-            // not a String
-            path: path.as_ref().to_string_lossy().to_string(),
-            encoding,
-        }
+        // FIXME: return an error  from cvs::Reader::from_path(), don't unwrap
+        ReaderSource::from_reader(csv::Reader::from_path(&path).unwrap(), path, encoding)
     }
 
     fn headers(&mut self) -> Row {
