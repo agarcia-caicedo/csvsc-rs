@@ -5,8 +5,8 @@ use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
 use std::fs::File;
 use std::iter::FromIterator;
-use std::path::Path;
 use std::collections::VecDeque;
+use std::path::{Path, PathBuf};
 
 use super::Row;
 
@@ -22,7 +22,7 @@ fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
 
 pub struct ReaderSource {
     reader: Reader<File>,
-    path: String,
+    path: PathBuf,
 }
 
 impl ReaderSource {
@@ -32,9 +32,7 @@ impl ReaderSource {
     ) -> ReaderSource {
         ReaderSource {
             reader,
-            // FIXME: if the path is really needed later, it should be stored as PathBuf,
-            // not a String
-            path: path.as_ref().to_string_lossy().to_string(),
+            path: path.as_ref().to_path_buf(),
         }
     }
 
@@ -58,7 +56,7 @@ impl ReaderSource {
 pub struct InputStream {
     readers: VecDeque<ReaderSource>,
     current_records: ByteRecordsIntoIter<File>,
-    current_path: String,
+    current_path: PathBuf,
     encoding: EncodingRef,
     headers: Row,
 }
@@ -104,7 +102,7 @@ impl Iterator for InputStream {
         match self.current_records.next() {
             Some(Ok(reg)) => {
                 let mut str_reg = decode(reg, self.encoding);
-                str_reg.push_field(&self.current_path);
+                str_reg.push_field(&self.current_path.to_str().unwrap());
 
                 if str_reg.len() != self.headers.len() {
                     panic!("Inconsistent size of rows");
