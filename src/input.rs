@@ -20,9 +20,9 @@ fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
 }
 
 pub struct ReaderSource {
-    pub reader: Reader<File>,
-    pub path: String,
-    pub encoding: EncodingRef,
+    reader: Reader<File>,
+    path: String,
+    encoding: EncodingRef,
 }
 
 impl ReaderSource {
