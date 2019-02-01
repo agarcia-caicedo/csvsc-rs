@@ -6,6 +6,7 @@ use std::clone::Clone;
 use std::fs::File;
 use std::iter::FromIterator;
 use std::path::Path;
+use std::collections::VecDeque;
 
 use super::Row;
 
@@ -55,7 +56,7 @@ impl ReaderSource {
 }
 
 pub struct InputStream {
-    readers: Vec<ReaderSource>,
+    readers: VecDeque<ReaderSource>,
     current_records: ByteRecordsIntoIter<File>,
     current_path: String,
     encoding: EncodingRef,
@@ -79,7 +80,7 @@ impl InputStream {
 
     fn new(mut reader_source: ReaderSource, encoding: EncodingRef) -> InputStream {
         InputStream {
-            readers: Vec::new(),
+            readers: VecDeque::new(),
             headers: decode(reader_source.headers(), encoding),
             current_records: reader_source.reader.into_byte_records(),
             current_path: reader_source.path,
@@ -88,7 +89,7 @@ impl InputStream {
     }
 
     fn add(&mut self, item: ReaderSource) {
-        self.readers.push(item);
+        self.readers.push_back(item);
     }
 
     pub fn headers(&self) -> &Row {
@@ -112,7 +113,7 @@ impl Iterator for InputStream {
                 Some(str_reg)
             }
             Some(Err(e)) => self.next(), // TODO warn something here
-            None => match self.readers.pop() {
+            None => match self.readers.pop_front() {
                 Some(mut rs) => {
                     let new_headers = decode(rs.headers(), self.encoding);
 
