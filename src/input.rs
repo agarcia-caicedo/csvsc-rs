@@ -40,9 +40,15 @@ impl ReaderSource {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P, encoding: EncodingRef) -> ReaderSource {
-        // FIXME: return an error  from cvs::Reader::from_path(), don't unwrap
-        ReaderSource::from_reader(csv::Reader::from_path(&path).unwrap(), path, encoding)
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        encoding: EncodingRef,
+    ) -> Result<ReaderSource, csv::Error> {
+        Ok(ReaderSource::from_reader(
+            csv::Reader::from_path(&path)?,
+            path,
+            encoding,
+        ))
     }
 
     fn headers(&mut self) -> Row {
@@ -155,7 +161,7 @@ mod tests {
         let filenames = ["test/assets/1.csv", "test/assets/2.csv"];
         let mut input_stream: InputStream = filenames
             .iter()
-            .filter_map(|f| Some(ReaderSource::from_path(f, UTF_8)))
+            .filter_map(|f| Some(ReaderSource::from_path(f, UTF_8).unwrap()))
             .collect();
 
         assert_eq!(
@@ -186,7 +192,7 @@ mod tests {
         let filenames = ["test/assets/windows1252/data.csv"];
         let mut input_stream: InputStream = filenames
             .iter()
-            .filter_map(|f| Some(ReaderSource::from_path(f, WINDOWS_1252)))
+            .filter_map(|f| Some(ReaderSource::from_path(f, WINDOWS_1252).unwrap()))
             .collect();
 
         assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
