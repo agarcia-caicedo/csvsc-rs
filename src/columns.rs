@@ -46,6 +46,7 @@ mod tests {
     use super::{AddColumns, ColSpec, Row};
 
     #[test]
+    #[ignore]
     fn test_add_columns() {
         let mut add_columns = AddColumns::new(
             vec![
