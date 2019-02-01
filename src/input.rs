@@ -7,6 +7,8 @@ use std::fs::File;
 use std::iter::FromIterator;
 use std::path::Path;
 
+use crate::error::{Error, RowResult};
+
 use super::Row;
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
@@ -97,7 +99,7 @@ impl InputStream {
 }
 
 impl Iterator for InputStream {
-    type Item = Row;
+    type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_records.next() {
@@ -109,9 +111,11 @@ impl Iterator for InputStream {
                     panic!("Inconsistent size of rows");
                 }
 
-                Some(str_reg)
+                Some(Ok(str_reg))
             }
-            Some(Err(e)) => self.next(), // TODO warn something here
+
+            Some(Err(e)) => Some(Err(Error::Csv(e))),
+
             None => match self.readers.pop() {
                 Some(mut rs) => {
                     let new_headers = decode(rs.headers(), self.encoding);
@@ -125,6 +129,7 @@ impl Iterator for InputStream {
 
                     self.next()
                 }
+
                 None => None,
             },
         }
@@ -149,20 +154,20 @@ mod tests {
         );
 
         assert_eq!(
-            input_stream.next(),
-            Some(Row::from(vec!["1", "3", "test/assets/1.csv"]))
+            input_stream.next().unwrap().unwrap(),
+            Row::from(vec!["1", "3", "test/assets/1.csv"])
         );
         assert_eq!(
-            input_stream.next(),
-            Some(Row::from(vec!["5", "2", "test/assets/1.csv"]))
+            input_stream.next().unwrap().unwrap(),
+            Row::from(vec!["5", "2", "test/assets/1.csv"])
         );
         assert_eq!(
-            input_stream.next(),
-            Some(Row::from(vec!["2", "2", "test/assets/2.csv"]))
+            input_stream.next().unwrap().unwrap(),
+            Row::from(vec!["2", "2", "test/assets/2.csv"])
         );
         assert_eq!(
-            input_stream.next(),
-            Some(Row::from(vec!["4", "3", "test/assets/2.csv"]))
+            input_stream.next().unwrap().unwrap(),
+            Row::from(vec!["4", "3", "test/assets/2.csv"])
         );
     }
 
@@ -176,11 +181,11 @@ mod tests {
         assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
 
         assert_eq!(
-            input_stream.next(),
-            Some(Row::from(vec![
+            input_stream.next().unwrap().unwrap(),
+            Row::from(vec![
                 "árbol",
                 "test/assets/windows1252/data.csv"
-            ]))
+            ])
         );
     }
 }
