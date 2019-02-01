@@ -81,11 +81,8 @@ fn main() {
     let input_stream: InputStream = filenames
         .iter()
         .filter_map(|f| match csv::Reader::from_path(f) {
-            Ok(reader) => Some(ReaderSource {
-                reader,
-                path: f.to_string(),
-                encoding: encoding,
-            }),
+            Ok(reader) => Some(ReaderSource::from_reader(reader, f, encoding)),
+
             Err(e) => {
                 match e.kind() {
                     csv::ErrorKind::Io(error) => match error.kind() {
