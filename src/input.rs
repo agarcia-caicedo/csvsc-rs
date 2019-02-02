@@ -101,7 +101,7 @@ impl Iterator for InputStream {
         match self.current_records.next() {
             Some(Ok(reg)) => {
                 let mut str_reg = decode(reg, self.encoding);
-                str_reg.push_field(&self.current_path.as_ref().to_string_lossy().to_string());
+                str_reg.push_field(&self.current_path.to_string_lossy());
 
                 if str_reg.len() != self.headers.len() {
                     return Some(Err(Error::InconsistentSizeOfRows(PathBuf::from(
