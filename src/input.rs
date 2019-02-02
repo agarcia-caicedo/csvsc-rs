@@ -104,9 +104,9 @@ impl Iterator for InputStream {
                 str_reg.push_field(&self.current_path.to_string_lossy());
 
                 if str_reg.len() != self.headers.len() {
-                    return Some(Err(Error::InconsistentSizeOfRows(PathBuf::from(
-                        &self.current_path,
-                    ))));
+                    return Some(Err(Error::InconsistentSizeOfRows(
+                        self.current_path.clone(),
+                    )));
                 }
 
                 Some(Ok(str_reg))
