@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{Error, RowResult};
 
 use super::Row;
+use super::Headers;
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     let mut row = Row::with_capacity(data.as_slice().len(), data.len());
@@ -53,7 +54,7 @@ pub struct InputStream {
     current_records: ByteRecordsIntoIter<File>,
     current_path: PathBuf,
     encoding: EncodingRef,
-    headers: Row,
+    headers: Headers,
 }
 
 impl InputStream {
@@ -77,7 +78,7 @@ impl InputStream {
     fn new(mut reader_source: ReaderSource, encoding: EncodingRef) -> InputStream {
         InputStream {
             readers: VecDeque::new(),
-            headers: decode(reader_source.headers(), encoding),
+            headers: Headers::from_row(decode(reader_source.headers(), encoding)),
             current_records: reader_source.reader.into_byte_records(),
             current_path: reader_source.path,
             encoding,
@@ -89,7 +90,7 @@ impl InputStream {
     }
 
     pub fn headers(&self) -> &Row {
-        &self.headers
+        self.headers.as_row()
     }
 }
 
