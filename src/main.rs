@@ -101,7 +101,7 @@ fn main() {
     let add_columns = AddColumns::new(
         input_stream,
         match matches.values_of("add_columns") {
-            Some(columns) => columns.map(|s| ColSpec::new(s)).collect(),
+            Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
             None => Vec::new(),
         },
     );
