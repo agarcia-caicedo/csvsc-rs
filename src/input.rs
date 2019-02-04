@@ -1,6 +1,5 @@
 use csv::Reader;
 use csv::{ByteRecord, ByteRecordsIntoIter};
-use encoding::all::ISO_8859_1;
 use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
 use std::fs::File;
