@@ -2,7 +2,7 @@ use crate::error::RowResult;
 use std::str::FromStr;
 use regex::Regex;
 
-use super::Row;
+use super::{Row, Headers, RowStream};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {
@@ -88,11 +88,20 @@ impl FromStr for ColSpec {
 pub struct AddColumns<T> {
     iter: T,
     columns: Vec<ColSpec>,
+    headers: Headers,
 }
 
-impl<T: Iterator<Item = RowResult>> AddColumns<T> {
+impl<T> AddColumns<T>
+    where T: Iterator<Item = RowResult> + RowStream
+{
     pub fn new(iter: T, columns: Vec<ColSpec>) -> AddColumns<T> {
-        AddColumns { iter, columns }
+        let headers = iter.headers().clone();
+
+        AddColumns {
+            iter,
+            columns,
+            headers,
+        }
     }
 }
 
@@ -119,6 +128,7 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
 #[cfg(test)]
 mod tests {
     use super::{AddColumns, ColSpec, Row};
+    use crate::mock::MockStream;
 
     #[test]
     fn test_colspec_simplest() {
@@ -139,15 +149,15 @@ mod tests {
     #[test]
     #[ignore]
     fn test_add_columns() {
+        let iter = MockStream::from_rows(vec![
+            Ok(Row::from(vec!["1", "40", "/tmp/a1m.csv"])),
+            Ok(Row::from(vec!["2", "39", "/tmp/a1m.csv"])),
+            Ok(Row::from(vec!["3", "38", "/tmp/a2m.csv"])),
+            Ok(Row::from(vec!["4", "37", "/tmp/a2m.csv"])),
+        ].into_iter()).unwrap();
+
         let mut add_columns = AddColumns::new(
-            vec![
-                Row::from(vec!["1", "40", "/tmp/a1m.csv"]),
-                Row::from(vec!["2", "39", "/tmp/a1m.csv"]),
-                Row::from(vec!["3", "38", "/tmp/a2m.csv"]),
-                Row::from(vec!["4", "37", "/tmp/a2m.csv"]),
-            ]
-            .into_iter()
-            .map(|r| Ok(r)),
+            iter,
             vec!["regex:_source:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
         );
 

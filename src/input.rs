@@ -10,6 +10,7 @@ use crate::error::{Error, RowResult};
 
 use super::Row;
 use super::Headers;
+use super::RowStream;
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     let mut row = Row::with_capacity(data.as_slice().len(), data.len());
@@ -91,6 +92,12 @@ impl InputStream {
 
     pub fn headers(&self) -> &Row {
         self.headers.as_row()
+    }
+}
+
+impl RowStream for InputStream {
+    fn headers(&self) -> &Headers {
+        &self.headers
     }
 }
 
