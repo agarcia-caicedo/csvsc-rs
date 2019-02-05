@@ -9,6 +9,7 @@ pub use input::InputStream;
 pub use headers::Headers;
 
 mod row_stream;
+pub mod mock;
 
 pub use row_stream::RowStream;
 
