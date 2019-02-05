@@ -3,6 +3,7 @@ use std::cmp::PartialEq;
 
 use super::Row;
 
+#[derive(Debug,Clone,PartialEq)]
 pub struct Headers {
     indexes: HashMap<String, usize>,
     names: Row,
