@@ -8,4 +8,8 @@ pub use error::{Error, RowResult};
 pub use input::InputStream;
 pub use headers::Headers;
 
+mod row_stream;
+
+pub use row_stream::RowStream;
+
 type Row = csv::StringRecord;
