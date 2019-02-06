@@ -122,13 +122,30 @@ impl<T> AddColumns<T>
     where T: Iterator<Item = RowResult> + RowStream
 {
     pub fn new(iter: T, columns: Vec<ColSpec>) -> AddColumns<T> {
-        let headers = iter.headers().clone();
+        let mut headers = iter.headers().clone();
+
+        for col in columns.iter() {
+            match col {
+                ColSpec::Regex{colname, ..} => {
+                    headers.add(colname);
+                },
+                ColSpec::Const{colname, ..} => {
+                    headers.add(colname);
+                },
+            }
+        }
 
         AddColumns {
             iter,
             columns,
             headers,
         }
+    }
+}
+
+impl<I> RowStream for AddColumns<I> {
+    fn headers(&self) -> &Headers {
+        &self.headers
     }
 }
 
@@ -154,7 +171,7 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{AddColumns, ColSpec, Row};
+    use super::{AddColumns, ColSpec, Row, Headers, RowStream};
     use crate::mock::MockStream;
 
     #[test]
@@ -174,9 +191,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_add_columns() {
         let iter = MockStream::from_rows(vec![
+            Ok(Row::from(vec!["id", "val", "path"])),
             Ok(Row::from(vec!["1", "40", "/tmp/a1m.csv"])),
             Ok(Row::from(vec!["2", "39", "/tmp/a1m.csv"])),
             Ok(Row::from(vec!["3", "38", "/tmp/a2m.csv"])),
@@ -185,7 +202,12 @@ mod tests {
 
         let mut add_columns = AddColumns::new(
             iter,
-            vec!["regex:_source:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
+            vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
+        );
+
+        assert_eq!(
+            *add_columns.headers(),
+            Headers::from_row(Row::from(vec!["id", "val", "path", "new"])),
         );
 
         assert_eq!(

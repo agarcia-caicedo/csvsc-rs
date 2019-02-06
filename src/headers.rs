@@ -23,6 +23,11 @@ impl Headers {
         }
     }
 
+    pub fn add(&mut self, colname: &str) {
+        self.names.push_field(colname);
+        self.indexes.insert(colname.to_string(), self.names.len()-1);
+    }
+
     pub fn len(&self) -> usize {
         self.names.len()
     }
