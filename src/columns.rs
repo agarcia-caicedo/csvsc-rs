@@ -11,6 +11,7 @@ pub enum ColSpecParseError {
     MissingColDef,
     MissingRegex,
     InvalidRegex,
+    InvalidSpec,
 }
 
 pub enum ColSpec {
@@ -20,13 +21,16 @@ pub enum ColSpec {
         coldef: String,
         regex: Regex,
     },
-    Const(String),
+    Const{
+        colname: String,
+        coldef: String,
+    },
 }
 
 impl ColSpec {
     pub fn compute(&self, data: &Row) -> Vec<String> {
         match *self {
-            ColSpec::Const(ref val) => vec![val.clone()],
+            ColSpec::Const{ref coldef, ..} => vec![coldef.clone()],
             ColSpec::Regex{..} => Vec::new(),
         }
     }
@@ -79,8 +83,31 @@ impl FromStr for ColSpec {
                 coldef,
                 regex,
             })
+        } else if spec.starts_with("value:") {
+            let mut pieces = spec.split(':');
+            pieces.next();
+
+            let colname;
+            let coldef;
+
+            if let Some(s) = pieces.next() {
+                colname = s.to_string();
+            } else {
+                return Err(ColSpecParseError::MissingColname);
+            }
+
+            if let Some(s) = pieces.next() {
+                coldef = s.to_string();
+            } else {
+                return Err(ColSpecParseError::MissingColDef);
+            }
+
+            Ok(ColSpec::Const{
+                colname,
+                coldef,
+            })
         } else {
-            Ok(ColSpec::Const(spec.to_string()))
+            Err(ColSpecParseError::InvalidSpec)
         }
     }
 }
@@ -132,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_colspec_simplest() {
-        let c: ColSpec = "value".parse().unwrap();
+        let c: ColSpec = "value:new:value".parse().unwrap();
         let data = Row::new();
 
         assert_eq!(c.compute(&data), ["value"]);
