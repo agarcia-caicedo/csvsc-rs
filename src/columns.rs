@@ -28,10 +28,10 @@ pub enum ColSpec {
 }
 
 impl ColSpec {
-    pub fn compute(&self, data: &Row, headers: &Headers) -> Vec<String> {
+    pub fn compute(&self, data: &Row, headers: &Headers) -> String {
         match *self {
-            ColSpec::Const{ref coldef, ..} => vec![coldef.clone()],
-            ColSpec::Regex{..} => Vec::new(),
+            ColSpec::Const{ref coldef, ..} => coldef.clone(),
+            ColSpec::Regex{..} => String::new(),
         }
     }
 }
@@ -156,11 +156,7 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
         self.iter.next().map(|result| {
             result.and_then(|mut val| {
                 for spec in self.columns.iter() {
-                    let new_fields = spec.compute(&val, self.headers());
-
-                    for field in new_fields {
-                        val.push_field(&field);
-                    }
+                    val.push_field(&spec.compute(&val, self.headers()));
                 }
 
                 Ok(val)
@@ -181,7 +177,7 @@ mod tests {
 
         assert_eq!(
             c.compute(&data, &Headers::from_row(Row::from(vec!["a"]))),
-            ["value"],
+            "value",
         );
     }
 
@@ -192,7 +188,7 @@ mod tests {
 
         assert_eq!(
             c.compute(&data, &Headers::from_row(Row::from(vec!["_source"]))),
-            ["20"],
+            "20",
         );
     }
 
