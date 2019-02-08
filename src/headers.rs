@@ -35,6 +35,10 @@ impl Headers {
     pub fn as_row(&self) -> &Row {
         &self.names
     }
+
+    pub fn get(&self, field: &str) -> Option<usize> {
+        self.indexes.get(field).map(|u| *u)
+    }
 }
 
 impl PartialEq<Headers> for Row {
