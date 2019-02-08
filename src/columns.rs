@@ -14,6 +14,19 @@ pub enum ColSpecParseError {
     InvalidSpec,
 }
 
+#[derive(Debug)]
+pub enum ColBuildError {
+    UnknownSource,
+}
+
+impl ColBuildError {
+    fn to_csv(&self) -> String {
+        match *self {
+            ColBuildError::UnknownSource => "#NO_SOURCE".to_string(),
+        }
+    }
+}
+
 pub enum ColSpec {
     Regex{
         source: String,
@@ -28,10 +41,12 @@ pub enum ColSpec {
 }
 
 impl ColSpec {
-    pub fn compute(&self, data: &Row, headers: &Headers) -> String {
+    pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
         match *self {
-            ColSpec::Const{ref coldef, ..} => coldef.clone(),
-            ColSpec::Regex{..} => String::new(),
+            ColSpec::Const{ref coldef, ..} => Ok(coldef.clone()),
+            ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
+                Ok(String::new())
+            },
         }
     }
 }
@@ -156,7 +171,10 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
         self.iter.next().map(|result| {
             result.and_then(|mut val| {
                 for spec in self.columns.iter() {
-                    val.push_field(&spec.compute(&val, self.headers()));
+                    val.push_field(&match spec.compute(&val, self.headers()) {
+                        Ok(s) => s,
+                        Err(e) => e.to_csv(),
+                    });
                 }
 
                 Ok(val)
@@ -176,7 +194,7 @@ mod tests {
         let data = Row::new();
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["a"]))),
+            c.compute(&data, &Headers::from_row(Row::from(vec!["a"]))).unwrap(),
             "value",
         );
     }
@@ -187,7 +205,7 @@ mod tests {
         let data = Row::from(vec!["a20m"]);
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["_source"]))),
+            c.compute(&data, &Headers::from_row(Row::from(vec!["_source"]))).unwrap(),
             "20",
         );
     }
