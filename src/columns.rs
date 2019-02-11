@@ -1,7 +1,6 @@
 use crate::error::RowResult;
 use std::str::FromStr;
 use regex::{Regex, Captures};
-use strfmt::{strfmt, FmtError};
 
 use super::{Row, Headers, RowStream, get_field};
 
@@ -58,10 +57,8 @@ impl ColSpec {
             ColSpec::Const{ref coldef, ..} => Ok(coldef.clone()),
             ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
                 match get_field(headers, data, source) {
-                    Some(s) => match regex.captures(s) {
-                        Some(c) => {
-                            unimplemented!()
-                        },
+                    Some(field) => match regex.captures(field) {
+                        Some(captures) => Ok(interpolate(&coldef, &captures)),
                         None => Err(ColBuildError::ReNoMatch),
                     },
                     None => Err(ColBuildError::UnknownSource),
@@ -206,8 +203,8 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
 #[cfg(test)]
 mod tests {
     use super::{
-        AddColumns, ColSpec, Row, Headers, RowStream, Regex, Captures, strfmt,
-        FmtError, interpolate,
+        AddColumns, ColSpec, Row, Headers, RowStream, Regex, Captures,
+        interpolate,
     };
     use crate::mock::MockStream;
 
@@ -224,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_colspec_regex_source() {
-        let c: ColSpec = "regex:_source:new:1:a([0-9]+)m".parse().unwrap();
+        let c: ColSpec = "regex:_source:new:${number}:a(?P<number>[0-9]+)m".parse().unwrap();
         let data = Row::from(vec!["a20m"]);
 
         assert_eq!(
@@ -275,8 +272,8 @@ mod tests {
     fn test_interpolate() {
         let regex = Regex::new(r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})").unwrap();
         let captures = regex.captures("2019-02-09").unwrap();
-        let template = String::from("Día: {day} mes: {month} año: {year}");
+        let template = String::from("Día: ${day} mes: ${month} año: ${year}");
 
-        assert_eq!(interpolate(&template, &captures), "Día: {day} mes: {month} año: {year}");
+        assert_eq!(interpolate(&template, &captures), "Día: 09 mes: 02 año: 2019");
     }
 }
