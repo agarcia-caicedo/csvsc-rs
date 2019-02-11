@@ -252,19 +252,19 @@ mod tests {
 
         assert_eq!(
             add_columns.next().unwrap().unwrap(),
-            Row::from(vec!["1", "40", "1"])
+            Row::from(vec!["1", "40", "/tmp/a1m.csv", "1"])
         );
         assert_eq!(
             add_columns.next().unwrap().unwrap(),
-            Row::from(vec!["2", "39", "1"])
+            Row::from(vec!["2", "39", "/tmp/a1m.csv", "1"])
         );
         assert_eq!(
             add_columns.next().unwrap().unwrap(),
-            Row::from(vec!["3", "38", "2"])
+            Row::from(vec!["3", "38", "/tmp/a2m.csv", "2"])
         );
         assert_eq!(
             add_columns.next().unwrap().unwrap(),
-            Row::from(vec!["4", "37", "2"])
+            Row::from(vec!["4", "37", "/tmp/a2m.csv", "2"])
         );
     }
 
