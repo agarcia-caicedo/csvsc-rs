@@ -1,8 +1,9 @@
 use crate::error::RowResult;
 use std::str::FromStr;
-use regex::Regex;
+use regex::{Regex, Captures};
+use strfmt::{strfmt, FmtError};
 
-use super::{Row, Headers, RowStream};
+use super::{Row, Headers, RowStream, get_field};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {
@@ -17,14 +18,25 @@ pub enum ColSpecParseError {
 #[derive(Debug)]
 pub enum ColBuildError {
     UnknownSource,
+    ReNoMatch,
 }
 
 impl ColBuildError {
     fn to_csv(&self) -> String {
         match *self {
             ColBuildError::UnknownSource => "#NO_SOURCE".to_string(),
+            ColBuildError::ReNoMatch => "#RE_NO_MATCH".to_string(),
         }
     }
+}
+
+fn interpolate(template: &str, captures: &Captures) -> String {
+    // strfmt(template, captures)
+    let mut res = String::new();
+
+    captures.expand(template, &mut res);
+
+    res
 }
 
 pub enum ColSpec {
@@ -45,7 +57,15 @@ impl ColSpec {
         match *self {
             ColSpec::Const{ref coldef, ..} => Ok(coldef.clone()),
             ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
-                Ok(String::new())
+                match get_field(headers, data, source) {
+                    Some(s) => match regex.captures(s) {
+                        Some(c) => {
+                            unimplemented!()
+                        },
+                        None => Err(ColBuildError::ReNoMatch),
+                    },
+                    None => Err(ColBuildError::UnknownSource),
+                }
             },
         }
     }
@@ -185,7 +205,10 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{AddColumns, ColSpec, Row, Headers, RowStream};
+    use super::{
+        AddColumns, ColSpec, Row, Headers, RowStream, Regex, Captures, strfmt,
+        FmtError, interpolate,
+    };
     use crate::mock::MockStream;
 
     #[test]
@@ -246,5 +269,14 @@ mod tests {
             add_columns.next().unwrap().unwrap(),
             Row::from(vec!["4", "37", "2"])
         );
+    }
+
+    #[test]
+    fn test_interpolate() {
+        let regex = Regex::new(r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})").unwrap();
+        let captures = regex.captures("2019-02-09").unwrap();
+        let template = String::from("Día: {day} mes: {month} año: {year}");
+
+        assert_eq!(interpolate(&template, &captures), "Día: {day} mes: {month} año: {year}");
     }
 }
