@@ -1,10 +1,9 @@
 use crate::error::RowResult;
 use std::str::FromStr;
 use regex::{Regex, Captures};
-use strfmt::{Format, FmtError, strfmt_map, Formatter};
-use std::collections::HashMap;
+use strfmt::{FmtError, strfmt_map, Formatter};
 
-use super::{Row, Headers, RowStream, get_field, pack};
+use super::{Row, Headers, RowStream, get_field};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {

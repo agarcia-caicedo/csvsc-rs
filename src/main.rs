@@ -109,7 +109,10 @@ fn main() {
     // Step 3. Stablish destination
     let add_dest = AddColumns::new(
         add_columns,
-        vec![], // TODO add a column for the destination folder
+        vec![ColSpec::Mix{
+            colname: "_target".to_string(),
+            coldef: matches.value_of("output").unwrap().to_string(),
+        }],
     );
 
     // Step 4. Reduce, aggregate

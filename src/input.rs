@@ -3,7 +3,6 @@ use csv::{ByteRecord, ByteRecordsIntoIter};
 use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
 use std::fs::File;
-use std::iter::FromIterator;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use crate::error::{Error, RowResult};
