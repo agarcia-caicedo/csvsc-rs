@@ -105,10 +105,12 @@ fn main() {
             None => Vec::new(),
         },
     );
-    // mapper = Mapper(input_stream, add_columns=self.add_columns)
 
     // Step 3. Stablish destination
-    // dist = Distributor(mapper, self.output)
+    let add_dest = AddColumns::new(
+        add_columns,
+        vec![], // TODO add a column for the destination folder
+    );
 
     // Step 4. Reduce, aggregate
     // reducer = Reducer(dist, grouping=self.grouping, columns=self.reducer_columns)

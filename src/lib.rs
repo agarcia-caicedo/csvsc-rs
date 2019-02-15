@@ -11,6 +11,6 @@ pub use headers::Headers;
 mod row_stream;
 pub mod mock;
 
-pub use row_stream::{RowStream, get_field};
+pub use row_stream::{RowStream, get_field, pack};
 
 type Row = csv::StringRecord;

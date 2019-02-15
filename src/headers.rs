@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::cmp::PartialEq;
+use csv::StringRecordIter;
 
 use super::Row;
 
@@ -38,6 +39,10 @@ impl Headers {
 
     pub fn get(&self, field: &str) -> Option<usize> {
         self.indexes.get(field).map(|u| *u)
+    }
+
+    pub fn iter(&self) -> StringRecordIter {
+        self.names.iter()
     }
 }
 

@@ -1,8 +1,10 @@
 use crate::error::RowResult;
 use std::str::FromStr;
 use regex::{Regex, Captures};
+use strfmt::{Format, FmtError, strfmt_map, Formatter};
+use std::collections::HashMap;
 
-use super::{Row, Headers, RowStream, get_field};
+use super::{Row, Headers, RowStream, get_field, pack};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {
@@ -18,6 +20,9 @@ pub enum ColSpecParseError {
 pub enum ColBuildError {
     UnknownSource,
     ReNoMatch,
+    InvalidFormat,
+    // TODO add the missing key
+    KeyError,
 }
 
 impl ColBuildError {
@@ -25,10 +30,13 @@ impl ColBuildError {
         match *self {
             ColBuildError::UnknownSource => "#NO_SOURCE".to_string(),
             ColBuildError::ReNoMatch => "#RE_NO_MATCH".to_string(),
+            ColBuildError::InvalidFormat => "#FORMAT".to_string(),
+            ColBuildError::KeyError => "#KEY_ERROR".to_string(),
         }
     }
 }
 
+// TODO replaceme with strfmt::format maybe
 fn interpolate(template: &str, captures: &Captures) -> String {
     // strfmt(template, captures)
     let mut res = String::new();
@@ -38,14 +46,19 @@ fn interpolate(template: &str, captures: &Captures) -> String {
     res
 }
 
+/// Represents a spec for building a new column.
 pub enum ColSpec {
+    /// Builds a new column based on a previous one, taking information from
+    /// a regular expression.
     Regex{
         source: String,
         colname: String,
         coldef: String,
         regex: Regex,
     },
-    Const{
+
+    /// Adds a new column based on a mix template of existing ones
+    Mix{
         colname: String,
         coldef: String,
     },
@@ -54,7 +67,22 @@ pub enum ColSpec {
 impl ColSpec {
     pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
         match *self {
-            ColSpec::Const{ref coldef, ..} => Ok(coldef.clone()),
+            ColSpec::Mix{ref coldef, ..} => {
+                match strfmt_map(&coldef, &|mut fmt: Formatter| {
+                    let v = match get_field(headers, data, fmt.key) {
+                        Some(v) => v,
+                        None => {
+                            return Err(FmtError::KeyError(fmt.key.to_string()));
+                        }
+                    };
+                    fmt.str(v)
+                }) {
+                    Ok(s) => Ok(s),
+                    Err(FmtError::Invalid(_)) => Err(ColBuildError::InvalidFormat),
+                    Err(FmtError::KeyError(_)) => Err(ColBuildError::KeyError),
+                    Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
+                }
+            },
             ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
                 match get_field(headers, data, source) {
                     Some(field) => match regex.captures(field) {
@@ -134,7 +162,7 @@ impl FromStr for ColSpec {
                 return Err(ColSpecParseError::MissingColDef);
             }
 
-            Ok(ColSpec::Const{
+            Ok(ColSpec::Mix{
                 colname,
                 coldef,
             })
@@ -161,7 +189,7 @@ impl<T> AddColumns<T>
                 ColSpec::Regex{colname, ..} => {
                     headers.add(colname);
                 },
-                ColSpec::Const{colname, ..} => {
+                ColSpec::Mix{colname, ..} => {
                     headers.add(colname);
                 },
             }
@@ -227,6 +255,17 @@ mod tests {
         assert_eq!(
             c.compute(&data, &Headers::from_row(Row::from(vec!["_source"]))).unwrap(),
             "20",
+        );
+    }
+
+    #[test]
+    fn test_colspec_mix() {
+        let c: ColSpec = "value:new:{a}-{b}".parse().expect("could not parse");
+        let data = Row::from(vec!["2", "4"]);
+
+        assert_eq!(
+            c.compute(&data, &Headers::from_row(Row::from(vec!["a", "b"]))).unwrap(),
+            "2-4",
         );
     }
 
