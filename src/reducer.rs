@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::collections::HashMap;
-use super::{Headers, RowStream, RowResult, Row};
+use super::{Headers, RowStream, RowResult, Row, get_field};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -27,9 +27,63 @@ pub enum ReducerBuildError {
     KeyError(String),
 }
 
-enum ReducerState {
-    Processed,
-    Unprocessed,
+#[derive(Debug,PartialEq)]
+struct HashError(String);
+
+#[derive(Debug)]
+pub enum ConsumeError {
+    KeyError(String),
+}
+
+impl From<HashError> for ConsumeError {
+    fn from(column: HashError) -> ConsumeError {
+        ConsumeError::KeyError(column.0)
+    }
+}
+
+fn hash(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashError> {
+    let mut hasher = DefaultHasher::new();
+
+    for col in columns {
+        match get_field(headers, row, col) {
+            Some(field) => field.hash(&mut hasher),
+            None => return Err(HashError(col.to_string())),
+        }
+    }
+
+    Ok(hasher.finish())
+}
+
+struct Group {
+}
+
+impl Group {
+    fn update(&mut self, row: &Row) {
+        unimplemented!()
+    }
+}
+
+impl From<Row> for Group {
+    fn from(row: Row) -> Group {
+        unimplemented!()
+    }
+}
+
+struct Groups {
+}
+
+impl From<HashMap<u64, Group>> for Groups {
+    fn from(data: HashMap<u64, Group>) -> Groups {
+        unimplemented!()
+    }
+}
+
+impl Iterator for Groups {
+    type Item = RowResult;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unimplemented!()
+    }
 }
 
 pub struct Reducer<I> {
@@ -67,46 +121,12 @@ impl<I> Reducer<I>
             headers,
         })
     }
-}
 
-impl<I> RowStream for Reducer<I> {
-    fn headers(&self) -> &Headers {
-        &self.headers
-    }
-}
-
-fn hash(headers: &Headers, row: &Row, columns: &[String]) -> u64 {
-    unimplemented!()
-}
-
-struct Group {
-}
-
-impl Group {
-    fn update(&mut self, row: &Row) {
-        unimplemented!()
-    }
-}
-
-impl From<Row> for Group {
-    fn from(row: Row) -> Group {
-        unimplemented!()
-    }
-}
-
-impl<I> IntoIterator for Reducer<I>
-    where I: Iterator<Item = RowResult>
-{
-    type Item = RowResult;
-    type IntoIter = IntoIter;
-
-    /// Calling this triggers consumption of the source iterator and consumes
-    /// the reducer itself, yielding an interator over the aggregated results.
-    fn into_iter(self) -> Self::IntoIter {
+    fn groups(self) -> Result<Groups, ConsumeError> {
         let mut groups = HashMap::new();
 
         for item in self.iter.filter_map(|c| c.ok()) {
-            let item_hash = hash(&self.headers, &item, &self.group_by);
+            let item_hash = hash(&self.headers, &item, &self.group_by)?;
 
             groups.entry(item_hash)
                 .and_modify(|group: &mut Group| {
@@ -117,30 +137,19 @@ impl<I> IntoIterator for Reducer<I>
                 });
         }
 
-        IntoIter::from(groups)
+        Ok(Groups::from(groups))
     }
 }
 
-pub struct IntoIter {
-}
-
-impl From<HashMap<u64, Group>> for IntoIter {
-    fn from(data: HashMap<u64, Group>) -> IntoIter {
-        unimplemented!()
-    }
-}
-
-impl Iterator for IntoIter {
-    type Item = RowResult;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
+impl<I> RowStream for Reducer<I> {
+    fn headers(&self) -> &Headers {
+        &self.headers
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Reducer;
+    use super::{Reducer, Headers, hash, HashError};
     use crate::mock::MockStream;
     use crate::Row;
 
@@ -153,7 +162,7 @@ mod tests {
             Ok(Row::from(vec!["c", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap().into_iter().into_iter();
+        let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["a"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["b"]));
@@ -170,7 +179,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["avg:1".parse().unwrap()]).unwrap().into_iter();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["avg:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "3.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "8.0"]));
@@ -186,7 +195,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["min:1".parse().unwrap()]).unwrap().into_iter();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["min:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "2.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "7.0"]));
@@ -202,7 +211,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["max:1".parse().unwrap()]).unwrap().into_iter();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["max:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "4.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "9.0"]));
@@ -218,9 +227,30 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["sum:1".parse().unwrap()]).unwrap().into_iter();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["sum:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "6.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "16.0"]));
+    }
+
+    #[test]
+    fn test_hash() {
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["a".to_string()];
+
+        assert_eq!(hash(&header, &data, &cols).unwrap(), 16569625464242099095);
+
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["a".to_string(), "b".to_string()];
+
+        assert_eq!(hash(&header, &data, &cols).unwrap(), 15633344752900483833);
+
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["d".to_string()];
+
+        assert_eq!(hash(&header, &data, &cols), Err(HashError("d".to_string())));
     }
 }
