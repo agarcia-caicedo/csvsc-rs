@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::collections::HashMap;
-use super::{Headers, RowStream, RowResult};
+use super::{Headers, RowStream, RowResult, Row};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -32,17 +32,17 @@ enum ReducerState {
     Unprocessed,
 }
 
-pub struct Reducer<T> {
-    iter: T,
+pub struct Reducer<I> {
+    iter: I,
     group_by: Vec<String>,
     columns: Vec<Aggregate>,
     headers: Headers,
 }
 
-impl<T> Reducer<T>
-    where T: Iterator<Item = RowResult> + RowStream
+impl<I> Reducer<I>
+    where I: Iterator<Item = RowResult> + RowStream
 {
-    pub fn new(iter: T, grouping: Vec<&str>, columns: Vec<Aggregate>) -> Result<Reducer<T>, ReducerBuildError> {
+    pub fn new(iter: I, grouping: Vec<&str>, columns: Vec<Aggregate>) -> Result<Reducer<I>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
@@ -75,18 +75,59 @@ impl<I> RowStream for Reducer<I> {
     }
 }
 
-impl<I> IntoIterator for Reducer<I> {
+fn hash(headers: &Headers, row: &Row, columns: &[String]) -> u64 {
+    unimplemented!()
+}
+
+struct Group {
+}
+
+impl Group {
+    fn update(&mut self, row: &Row) {
+        unimplemented!()
+    }
+}
+
+impl From<Row> for Group {
+    fn from(row: Row) -> Group {
+        unimplemented!()
+    }
+}
+
+impl<I> IntoIterator for Reducer<I>
+    where I: Iterator<Item = RowResult>
+{
     type Item = RowResult;
     type IntoIter = IntoIter;
 
     /// Calling this triggers consumption of the source iterator and consumes
     /// the reducer itself, yielding an interator over the aggregated results.
     fn into_iter(self) -> Self::IntoIter {
-        unimplemented!()
+        let mut groups = HashMap::new();
+
+        for item in self.iter.filter_map(|c| c.ok()) {
+            let item_hash = hash(&self.headers, &item, &self.group_by);
+
+            groups.entry(item_hash)
+                .and_modify(|group: &mut Group| {
+                    group.update(&item);
+                })
+                .or_insert_with(|| {
+                    Group::from(item)
+                });
+        }
+
+        IntoIter::from(groups)
     }
 }
 
 pub struct IntoIter {
+}
+
+impl From<HashMap<u64, Group>> for IntoIter {
+    fn from(data: HashMap<u64, Group>) -> IntoIter {
+        unimplemented!()
+    }
 }
 
 impl Iterator for IntoIter {
