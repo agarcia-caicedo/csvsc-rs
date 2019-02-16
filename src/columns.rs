@@ -184,14 +184,10 @@ impl<T> AddColumns<T>
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
-            match col {
-                ColSpec::Regex{colname, ..} => {
-                    headers.add(colname);
-                },
-                ColSpec::Mix{colname, ..} => {
-                    headers.add(colname);
-                },
-            }
+            headers.add(match col {
+                ColSpec::Regex{colname, ..} => colname,
+                ColSpec::Mix{colname, ..} => colname,
+            });
         }
 
         AddColumns {
