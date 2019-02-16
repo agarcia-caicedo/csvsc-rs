@@ -1,10 +1,11 @@
 use clap::{App, Arg};
 use std::io;
 
-use csvsc::columns::ColSpec;
-use csvsc::input::ReaderSource;
+use csvsc::ColSpec;
+use csvsc::ReaderSource;
 use csvsc::AddColumns;
 use csvsc::InputStream;
+use csvsc::Reducer;
 use encoding::label::encoding_from_whatwg_label;
 
 fn main() {
@@ -116,7 +117,11 @@ fn main() {
     );
 
     // Step 4. Reduce, aggregate
-    // reducer = Reducer(dist, grouping=self.grouping, columns=self.reducer_columns)
+    let reducer = Reducer::new(
+        add_dest,
+        Vec::new(),
+        Vec::new(),
+    );
 
     // Step 5. Flush to destination
     // Flusher(reducer).flush()
