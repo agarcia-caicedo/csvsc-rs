@@ -41,6 +41,10 @@ impl Headers {
         self.indexes.get(field).map(|u| *u)
     }
 
+    pub fn contains_key(&self, field: &str) -> bool {
+        self.indexes.contains_key(field)
+    }
+
     pub fn iter(&self) -> StringRecordIter {
         self.names.iter()
     }

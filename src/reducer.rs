@@ -1,5 +1,8 @@
 use std::str::FromStr;
+use std::collections::VecDeque;
 use super::{Headers, RowStream, RowResult};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
 pub enum AggregateParseError {
@@ -16,30 +19,45 @@ impl FromStr for Aggregate {
     }
 }
 
+#[derive(Debug)]
+pub enum ReducerBuildError {
+    KeyError(String),
+}
+
 pub struct Reducer<T> {
     iter: T,
-    grouping_key: String,
+    group_by: Vec<String>,
     columns: Vec<Aggregate>,
     headers: Headers,
+    contents: VecDeque<RowResult>,
 }
 
 impl<T> Reducer<T>
     where T: Iterator<Item = RowResult> + RowStream
 {
-    pub fn new(iter: T, grouping: Vec<&str>, columns: Vec<Aggregate>) -> Reducer<T> {
+    pub fn new(iter: T, grouping: Vec<&str>, columns: Vec<Aggregate>) -> Result<Reducer<T>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
-        let grouping_key = unimplemented!();
+        let mut group_by = Vec::with_capacity(grouping.len());
+
+        for key in grouping.iter() {
+            if !headers.contains_key(key) {
+                return Err(ReducerBuildError::KeyError(key.to_string()));
+            }
+
+            group_by.push(key.to_string());
+        }
 
         for col in columns.iter() {
             unimplemented!();
         }
 
-        Reducer {
+        Ok(Reducer {
             iter,
-            grouping_key,
+            group_by,
             columns,
             headers,
-        }
+            contents: VecDeque::new(),
+        })
     }
 }
 
@@ -72,7 +90,7 @@ mod tests {
             Ok(Row::from(vec!["c", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, Vec::new(), Vec::new());
+        let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["a"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["b"]));
@@ -89,7 +107,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["avg:1".parse().unwrap()]);
+        let mut r = Reducer::new(iter, vec!["0"], vec!["avg:1".parse().unwrap()]).unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "3.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "8.0"]));
@@ -105,7 +123,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["min:1".parse().unwrap()]);
+        let mut r = Reducer::new(iter, vec!["0"], vec!["min:1".parse().unwrap()]).unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "2.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "7.0"]));
@@ -121,7 +139,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["max:1".parse().unwrap()]);
+        let mut r = Reducer::new(iter, vec!["0"], vec!["max:1".parse().unwrap()]).unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "4.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "9.0"]));
@@ -137,7 +155,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["sum:1".parse().unwrap()]);
+        let mut r = Reducer::new(iter, vec!["0"], vec!["sum:1".parse().unwrap()]).unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "6.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "16.0"]));
