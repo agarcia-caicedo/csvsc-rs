@@ -52,9 +52,17 @@ impl Group {
     }
 }
 
-impl From<Row> for Group {
-    fn from(row: Row) -> Group {
-        unimplemented!()
+impl<'a> From<&'a Vec<Box<dyn Aggregate>>> for Group {
+    fn from(row: &'a Vec<Box<dyn Aggregate>>) -> Group {
+        let mut contents = Vec::with_capacity(row.len());
+
+        for item in row {
+            contents.push((*item).clone());
+        }
+
+        Group {
+            contents,
+        }
     }
 }
 
@@ -111,6 +119,7 @@ impl<I> Reducer<I>
 
     fn groups(self) -> Result<Groups, ConsumeError> {
         let mut groups = HashMap::new();
+        let aggregates = self.columns;
 
         for item in self.iter.filter_map(|c| c.ok()) {
             let item_hash = hash(&self.headers, &item, &self.group_by)?;
@@ -120,7 +129,11 @@ impl<I> Reducer<I>
                     group.update(&item);
                 })
                 .or_insert_with(|| {
-                    Group::from(item)
+                    let mut g = Group::from(&aggregates);
+
+                    g.update(&item);
+
+                    g
                 });
         }
 
