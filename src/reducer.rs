@@ -5,8 +5,10 @@ use std::collections::hash_map::{self, DefaultHasher};
 use std::hash::{Hash, Hasher};
 
 mod aggregate;
+mod groups;
 
 use aggregate::Aggregate;
+use groups::{Group, Groups};
 
 #[derive(Debug)]
 pub enum ReducerBuildError {
@@ -40,54 +42,48 @@ fn hash(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashErr
     Ok(hasher.finish())
 }
 
-struct Group {
-    contents: Vec<Box<dyn Aggregate>>,
+#[derive(Debug)]
+pub enum AggregatedColParseError {
+    /// The specified string is not composed of exactly three words separated
+    /// by two colons
+    NotEnoughParts,
+    UnknownAggregate(String),
 }
 
-impl Group {
-    fn update(&mut self, row: &Row) {
-        for (agg, data) in self.contents.iter_mut().zip(row.iter()) {
-            agg.update(data);
-        }
-    }
-
-    fn as_row(self) -> Row {
-        unimplemented!()
-    }
+#[derive(Clone)]
+pub struct AggregatedCol {
+    colname: String,
+    source: String,
+    aggregate: Box<dyn Aggregate>,
 }
 
-impl<'a> From<&'a Vec<Box<dyn Aggregate>>> for Group {
-    fn from(row: &'a Vec<Box<dyn Aggregate>>) -> Group {
-        let mut contents = Vec::with_capacity(row.len());
+impl AggregatedCol {
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 
-        for item in row {
-            contents.push((*item).clone());
-        }
-
-        Group {
-            contents,
-        }
+    fn aggregate(&self) -> &Box<dyn Aggregate> {
+        &self.aggregate
     }
 }
 
-struct Groups {
-    groups: hash_map::IntoIter<u64, Group>,
-}
+impl FromStr for AggregatedCol {
+    type Err = AggregatedColParseError;
 
-impl From<HashMap<u64, Group>> for Groups {
-    fn from(data: HashMap<u64, Group>) -> Groups {
-        Groups {
-            groups: data.into_iter(),
+    fn from_str(def: &str) -> Result<AggregatedCol, Self::Err> {
+        let pieces: Vec<&str> = def.split(':').collect();
+
+        if pieces.len() != 3 {
+            return Err(AggregatedColParseError::NotEnoughParts);
         }
-    }
-}
 
-impl Iterator for Groups {
-    type Item = RowResult;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.groups.next().map(|g| {
-            Ok(g.1.as_row())
+        Ok(AggregatedCol {
+            colname: pieces[0].to_string(),
+            aggregate: Box::new(match pieces[1] {
+                "sum" => aggregate::Sum::new(),
+                s => return Err(AggregatedColParseError::UnknownAggregate(s.to_string())),
+            }),
+            source: pieces[2].to_string(),
         })
     }
 }
@@ -95,14 +91,14 @@ impl Iterator for Groups {
 pub struct Reducer<I> {
     iter: I,
     group_by: Vec<String>,
-    columns: Vec<Box<dyn Aggregate>>,
+    columns: Vec<AggregatedCol>,
     headers: Headers,
 }
 
 impl<I> Reducer<I>
     where I: Iterator<Item = RowResult> + RowStream
 {
-    pub fn new(iter: I, grouping: Vec<&str>, columns: Vec<Box<dyn Aggregate>>) -> Result<Reducer<I>, ReducerBuildError> {
+    pub fn new(iter: I, grouping: Vec<&str>, columns: Vec<AggregatedCol>) -> Result<Reducer<I>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
@@ -161,7 +157,6 @@ mod tests {
     use super::{Reducer, Headers, hash, HashError};
     use crate::mock::MockStream;
     use crate::Row;
-    use super::aggregate::parse;
 
     #[test]
     fn test_reducer_id_function() {
@@ -189,7 +184,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec![parse("avg:1").unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["new:avg:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "3.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "8.0"]));
@@ -205,7 +200,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec![parse("min:1").unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["new:min:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "2.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "7.0"]));
@@ -221,7 +216,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec![parse("max:1").unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["new:max:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "4.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "9.0"]));
@@ -237,7 +232,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec![parse("sum:1").unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["0"], vec!["new:sum:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "6.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "16.0"]));
