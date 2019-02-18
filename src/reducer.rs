@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::collections::HashMap;
 use super::{Headers, RowStream, RowResult, Row, get_field};
-use std::collections::hash_map::DefaultHasher;
+use std::collections::hash_map::{self, DefaultHasher};
 use std::hash::{Hash, Hasher};
 
 mod aggregate;
@@ -50,6 +50,10 @@ impl Group {
             agg.update(data);
         }
     }
+
+    fn as_row(self) -> Row {
+        unimplemented!()
+    }
 }
 
 impl<'a> From<&'a Vec<Box<dyn Aggregate>>> for Group {
@@ -67,11 +71,14 @@ impl<'a> From<&'a Vec<Box<dyn Aggregate>>> for Group {
 }
 
 struct Groups {
+    groups: hash_map::IntoIter<u64, Group>,
 }
 
 impl From<HashMap<u64, Group>> for Groups {
     fn from(data: HashMap<u64, Group>) -> Groups {
-        unimplemented!()
+        Groups {
+            groups: data.into_iter(),
+        }
     }
 }
 
@@ -79,7 +86,9 @@ impl Iterator for Groups {
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
+        self.groups.next().map(|g| {
+            Ok(g.1.as_row())
+        })
     }
 }
 
