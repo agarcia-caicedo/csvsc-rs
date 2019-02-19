@@ -87,10 +87,14 @@ impl FromStr for AggregatedCol {
 
         Ok(AggregatedCol {
             colname: pieces[0].to_string(),
-            aggregate: Box::new(match pieces[1] {
-                "sum" => aggregate::Sum::new(),
+            aggregate: match pieces[1] {
+                "sum" => Box::new(aggregate::Sum::new()),
+                "last" => Box::new(aggregate::Last::new()),
+                "avg" => Box::new(aggregate::Avg::new()),
+                "min" => Box::new(aggregate::Min::new()),
+                "max" => Box::new(aggregate::Max::new()),
                 s => return Err(AggregatedColParseError::UnknownAggregate(s.to_string())),
-            }),
+            },
             source: pieces[2].to_string(),
         })
     }
@@ -205,14 +209,14 @@ mod tests {
     #[test]
     fn test_reducer_avg() {
         let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b", "_target"])),
-            Ok(Row::from(vec!["1", "2", "a"])),
-            Ok(Row::from(vec!["1", "4", "a"])),
-            Ok(Row::from(vec!["2", "7", "a"])),
-            Ok(Row::from(vec!["2", "9", "a"])),
+            Ok(Row::from(vec!["a", "b"])),
+            Ok(Row::from(vec!["1", "2"])),
+            Ok(Row::from(vec!["1", "4"])),
+            Ok(Row::from(vec!["2", "7"])),
+            Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["new:avg:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:avg:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "3.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "8.0"]));
@@ -221,14 +225,14 @@ mod tests {
     #[test]
     fn test_reducer_min() {
         let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b", "_target"])),
-            Ok(Row::from(vec!["1", "2", "a"])),
-            Ok(Row::from(vec!["1", "4", "a"])),
-            Ok(Row::from(vec!["2", "7", "a"])),
-            Ok(Row::from(vec!["2", "9", "a"])),
+            Ok(Row::from(vec!["a", "b"])),
+            Ok(Row::from(vec!["1", "2"])),
+            Ok(Row::from(vec!["1", "4"])),
+            Ok(Row::from(vec!["2", "7"])),
+            Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["new:min:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "2.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "7.0"]));
@@ -237,14 +241,14 @@ mod tests {
     #[test]
     fn test_reducer_max() {
         let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b", "_target"])),
-            Ok(Row::from(vec!["1", "2", "a"])),
-            Ok(Row::from(vec!["1", "4", "a"])),
-            Ok(Row::from(vec!["2", "7", "a"])),
-            Ok(Row::from(vec!["2", "9", "a"])),
+            Ok(Row::from(vec!["a", "b"])),
+            Ok(Row::from(vec!["1", "2"])),
+            Ok(Row::from(vec!["1", "4"])),
+            Ok(Row::from(vec!["2", "7"])),
+            Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["new:max:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "4.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "9.0"]));
@@ -253,14 +257,14 @@ mod tests {
     #[test]
     fn test_reducer_sum() {
         let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b", "_target"])),
-            Ok(Row::from(vec!["1", "2", "a"])),
-            Ok(Row::from(vec!["1", "4", "a"])),
-            Ok(Row::from(vec!["2", "7", "a"])),
-            Ok(Row::from(vec!["2", "9", "a"])),
+            Ok(Row::from(vec!["a", "b"])),
+            Ok(Row::from(vec!["1", "2"])),
+            Ok(Row::from(vec!["1", "4"])),
+            Ok(Row::from(vec!["2", "7"])),
+            Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["0"], vec!["new:sum:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:1".parse().unwrap()]).unwrap().groups().unwrap();
 
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "6.0"]));
         assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "16.0"]));

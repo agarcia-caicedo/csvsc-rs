@@ -1,6 +1,6 @@
 use super::{AggregateError, Aggregate};
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 pub struct Last {
     current: String,
 }
@@ -13,7 +13,7 @@ impl Last {
 
 impl Clone for Last {
     fn clone(&self) -> Last {
-        Last { current: "".to_string() }
+        Last::new()
     }
 }
 
@@ -34,7 +34,7 @@ mod tests {
     use super::{Last, Aggregate};
 
     #[test]
-    fn test_sum() {
+    fn test_last() {
         let mut sum = Last::new();
 
         sum.update("3.0");

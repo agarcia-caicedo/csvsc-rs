@@ -1,6 +1,6 @@
 use super::{AggregateError, Aggregate};
 
-#[derive(Default)]
+#[derive(Default,Debug)]
 pub struct Sum {
     total: f64,
 }
@@ -13,7 +13,7 @@ impl Sum {
 
 impl Clone for Sum {
     fn clone(&self) -> Sum {
-        Sum { total: 0.0 }
+        Sum::new()
     }
 }
 

@@ -1,15 +1,23 @@
+use std::fmt::Debug;
+
 mod sum;
 mod last;
+mod avg;
+mod min;
+mod max;
 
 pub use sum::Sum;
 pub use last::Last;
+pub use avg::Avg;
+pub use min::Min;
+pub use max::Max;
 
 #[derive(Debug)]
 pub enum AggregateError {
     Parse,
 }
 
-pub trait Aggregate: AggregateClone {
+pub trait Aggregate: AggregateClone + Debug {
     fn update(&mut self, data: &str) -> Result<(), AggregateError>;
 
     fn value(&self) -> String;
