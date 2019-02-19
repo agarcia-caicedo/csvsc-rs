@@ -13,7 +13,8 @@ use groups::{Group, Groups};
 
 #[derive(Debug)]
 pub enum ReducerBuildError {
-    KeyError(String),
+    GroupingKeyError(String),
+    AggregateSourceError(String),
 }
 
 #[derive(Debug,PartialEq)]
@@ -71,6 +72,10 @@ impl AggregatedCol {
         &self.colname
     }
 
+    fn source(&self) -> &str {
+        &self.source
+    }
+
     fn aggregate(&self) -> &Box<dyn Aggregate> {
         &self.aggregate
     }
@@ -119,14 +124,10 @@ impl<I> Reducer<I>
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
-                return Err(ReducerBuildError::KeyError(key.to_string()));
+                return Err(ReducerBuildError::GroupingKeyError(key.to_string()));
             }
 
             group_by.push(key.to_string());
-        }
-
-        for col in columns.iter() {
-            headers.add(col.colname());
         }
 
         let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
@@ -139,6 +140,16 @@ impl<I> Reducer<I>
                 source: Rc::clone(&source),
                 aggregate: Box::new(aggregate::Last::new(Rc::clone(&source))),
             });
+        }
+
+        for col in columns.iter() {
+            if !headers.contains_key(col.source()) {
+                return Err(ReducerBuildError::AggregateSourceError(col.source().to_string()));
+            }
+        }
+
+        for col in columns.iter() {
+            headers.add(col.colname());
         }
 
         for column in columns {
@@ -156,18 +167,19 @@ impl<I> Reducer<I>
     fn groups(self) -> Result<Groups, ConsumeError> {
         let mut groups = HashMap::new();
         let aggregates = self.columns;
+        let headers = self.headers;
 
         for item in self.iter.filter_map(|c| c.ok()) {
-            let item_hash = hash(&self.headers, &item, &self.group_by)?;
+            let item_hash = hash(&headers, &item, &self.group_by)?;
 
             groups.entry(item_hash)
                 .and_modify(|group: &mut Group| {
-                    group.update(&item);
+                    group.update(&headers, &item);
                 })
                 .or_insert_with(|| {
                     let mut g = Group::from(&aggregates);
 
-                    g.update(&item);
+                    g.update(&headers, &item);
 
                     g
                 });
@@ -221,10 +233,16 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:avg:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()]).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "3.0"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "8.0"]));
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["1", "4", "3"]),
+            Row::from(vec!["2", "9", "8"]),
+        ]);
     }
 
     #[test]
@@ -237,10 +255,16 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "2.0"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "7.0"]));
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["1", "4", "2"]),
+            Row::from(vec!["2", "9", "7"]),
+        ]);
     }
 
     #[test]
@@ -253,10 +277,16 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "4.0"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "9.0"]));
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["1", "4", "4"]),
+            Row::from(vec!["2", "9", "9"]),
+        ]);
     }
 
     #[test]
@@ -269,10 +299,16 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:1".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2", "6.0"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "7", "16.0"]));
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["1", "4", "6"]),
+            Row::from(vec!["2", "9", "16"]),
+        ]);
     }
 
     #[test]

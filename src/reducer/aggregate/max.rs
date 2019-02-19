@@ -1,7 +1,8 @@
 use std::rc::Rc;
+use std::f64;
 use super::{AggregateError, Aggregate};
 
-#[derive(Default,Debug)]
+#[derive(Debug)]
 pub struct Max {
     source: Rc<String>,
     current: f64,
@@ -16,6 +17,15 @@ impl Max {
     }
 }
 
+impl Default for Max {
+    fn default() -> Max {
+        Max {
+            source: Rc::new(String::new()),
+            current: f64::NEG_INFINITY,
+        }
+    }
+}
+
 impl Clone for Max {
     fn clone(&self) -> Max {
         Max::new(Rc::clone(&self.source))
@@ -26,7 +36,7 @@ impl Aggregate for Max {
     fn update(&mut self, data: &str) -> Result<(), AggregateError> {
         match data.parse::<f64>() {
             Ok(num) => {
-                if num < self.current {
+                if num > self.current {
                     self.current = num;
                 }
 

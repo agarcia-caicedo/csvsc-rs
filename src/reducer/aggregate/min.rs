@@ -1,7 +1,8 @@
 use std::rc::Rc;
+use std::f64;
 use super::{AggregateError, Aggregate};
 
-#[derive(Default,Debug)]
+#[derive(Debug)]
 pub struct Min {
     source: Rc<String>,
     current: f64,
@@ -12,6 +13,15 @@ impl Min {
         Min {
             source,
             ..Default::default()
+        }
+    }
+}
+
+impl Default for Min {
+    fn default() -> Min {
+        Min {
+            source: Rc::new(String::new()),
+            current: f64::INFINITY,
         }
     }
 }

@@ -1,5 +1,5 @@
 use std::collections::{hash_map, HashMap};
-use crate::{Row, RowResult};
+use crate::{Row, RowResult, Headers, get_field};
 use super::{Aggregate, AggregatedCol};
 
 pub struct Group {
@@ -7,9 +7,9 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn update(&mut self, row: &Row) {
-        for (agg, data) in self.contents.iter_mut().zip(row.iter()) {
-            agg.update(data);
+    pub fn update(&mut self, headers: &Headers, row: &Row) {
+        for agg in self.contents.iter_mut() {
+            agg.update(get_field(headers, row, agg.source()).unwrap());
         }
     }
 
