@@ -61,13 +61,3 @@ impl Iterator for Groups {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::Group;
-
-    #[test]
-    fn test_group_as_row() {
-        unimplemented!()
-    }
-}
