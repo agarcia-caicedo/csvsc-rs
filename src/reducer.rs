@@ -191,9 +191,15 @@ mod tests {
 
         let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["a", "a"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["b", "a"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["c", "a"]));
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["a", "a"]),
+            Row::from(vec!["b", "a"]),
+            Row::from(vec!["c", "a"]),
+        ]);
     }
 
     #[test]
