@@ -68,6 +68,6 @@ mod tests {
         min.update("2");
         min.update(".5");
 
-        assert_eq!(min.value(), ".5");
+        assert_eq!(min.value(), "0.5");
     }
 }
