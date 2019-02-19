@@ -122,10 +122,24 @@ impl<I> Reducer<I>
             headers.add(col.colname());
         }
 
+        let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
+
+        for header in headers.iter() {
+            whole_columns.push(AggregatedCol {
+                colname: header.to_string(),
+                source: header.to_string(),
+                aggregate: Box::new(aggregate::Last::new()),
+            });
+        }
+
+        for column in columns {
+            whole_columns.push(column);
+        }
+
         Ok(Reducer {
             iter,
             group_by,
-            columns,
+            columns: whole_columns,
             headers,
         })
     }
@@ -177,9 +191,9 @@ mod tests {
 
         let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap().groups().unwrap();
 
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["a"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["b"]));
-        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["c"]));
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["a", "a"]));
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["b", "a"]));
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["c", "a"]));
     }
 
     #[test]

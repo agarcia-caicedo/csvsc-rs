@@ -14,7 +14,15 @@ impl Group {
     }
 
     pub fn as_row(self) -> Row {
-        unimplemented!()
+        let contents: Vec<String> = self.contents.iter().map(|g| g.value()).collect();
+        let buff_size = contents.iter().map(|s| s.len()).fold(0, |acc, n| acc + n);
+        let mut row = Row::with_capacity(buff_size, contents.len());
+
+        for item in contents.into_iter() {
+            row.push_field(&item);
+        }
+
+        row
     }
 }
 
