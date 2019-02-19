@@ -29,7 +29,15 @@ impl From<HashError> for ConsumeError {
     }
 }
 
+/// Creates a hash for the data described by the three arguments as follows:
+/// `columns` are used to locate the values in `row` as specified by `headers`.
+///
+/// If no columns are specified, a random hash is chosen.
 fn hash(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashError> {
+    if columns.len() == 0 {
+        return Ok(rand::random());
+    }
+
     let mut hasher = DefaultHasher::new();
 
     for col in columns {
