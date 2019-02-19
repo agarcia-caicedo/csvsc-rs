@@ -1,19 +1,24 @@
+use std::rc::Rc;
 use super::{AggregateError, Aggregate};
 
 #[derive(Default,Debug)]
 pub struct Min {
+    source: Rc<String>,
     current: f64,
 }
 
 impl Min {
-    pub fn new() -> Min {
-        Default::default()
+    pub fn new(source: Rc<String>) -> Min {
+        Min {
+            source,
+            ..Default::default()
+        }
     }
 }
 
 impl Clone for Min {
     fn clone(&self) -> Min {
-        Min::new()
+        Min::new(Rc::clone(&self.source))
     }
 }
 
@@ -34,15 +39,20 @@ impl Aggregate for Min {
     fn value(&self) -> String {
         self.current.to_string()
     }
+
+    fn source(&self) -> &str {
+        &self.source
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Min, Aggregate};
+    use std::rc::Rc;
 
     #[test]
     fn test_min() {
-        let mut min = Min::new();
+        let mut min = Min::new(Rc::new("".to_string()));
 
         min.update("3.0");
         min.update("2");

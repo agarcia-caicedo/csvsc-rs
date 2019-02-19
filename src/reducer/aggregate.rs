@@ -21,6 +21,8 @@ pub trait Aggregate: AggregateClone + Debug {
     fn update(&mut self, data: &str) -> Result<(), AggregateError>;
 
     fn value(&self) -> String;
+
+    fn source(&self) -> &str;
 }
 
 // https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object

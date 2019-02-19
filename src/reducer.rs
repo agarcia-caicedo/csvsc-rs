@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::rc::Rc;
 use std::collections::HashMap;
 use super::{Headers, RowStream, RowResult, Row, get_field};
 use std::collections::hash_map::{self, DefaultHasher};
@@ -61,7 +62,7 @@ pub enum AggregatedColParseError {
 #[derive(Clone)]
 pub struct AggregatedCol {
     colname: String,
-    source: String,
+    source: Rc<String>,
     aggregate: Box<dyn Aggregate>,
 }
 
@@ -85,17 +86,19 @@ impl FromStr for AggregatedCol {
             return Err(AggregatedColParseError::NotEnoughParts);
         }
 
+        let source = Rc::new(pieces[2].to_string());
+
         Ok(AggregatedCol {
             colname: pieces[0].to_string(),
             aggregate: match pieces[1] {
-                "sum" => Box::new(aggregate::Sum::new()),
-                "last" => Box::new(aggregate::Last::new()),
-                "avg" => Box::new(aggregate::Avg::new()),
-                "min" => Box::new(aggregate::Min::new()),
-                "max" => Box::new(aggregate::Max::new()),
+                "sum" => Box::new(aggregate::Sum::new(Rc::clone(&source))),
+                "last" => Box::new(aggregate::Last::new(Rc::clone(&source))),
+                "avg" => Box::new(aggregate::Avg::new(Rc::clone(&source))),
+                "min" => Box::new(aggregate::Min::new(Rc::clone(&source))),
+                "max" => Box::new(aggregate::Max::new(Rc::clone(&source))),
                 s => return Err(AggregatedColParseError::UnknownAggregate(s.to_string())),
             },
-            source: pieces[2].to_string(),
+            source,
         })
     }
 }
@@ -129,10 +132,12 @@ impl<I> Reducer<I>
         let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
 
         for header in headers.iter() {
+            let source = Rc::new(header.to_string());
+
             whole_columns.push(AggregatedCol {
                 colname: header.to_string(),
-                source: header.to_string(),
-                aggregate: Box::new(aggregate::Last::new()),
+                source: Rc::clone(&source),
+                aggregate: Box::new(aggregate::Last::new(Rc::clone(&source))),
             });
         }
 

@@ -1,20 +1,25 @@
+use std::rc::Rc;
 use super::{AggregateError, Aggregate};
 
 #[derive(Default,Debug)]
 pub struct Avg {
+    source: Rc<String>,
     sum: f64,
     count: u64,
 }
 
 impl Avg {
-    pub fn new() -> Avg {
-        Default::default()
+    pub fn new(source: Rc<String>) -> Avg {
+        Avg {
+            source,
+            ..Default::default()
+        }
     }
 }
 
 impl Clone for Avg {
     fn clone(&self) -> Avg {
-        Avg::new()
+        Avg::new(Rc::clone(&self.source))
     }
 }
 
@@ -34,15 +39,20 @@ impl Aggregate for Avg {
     fn value(&self) -> String {
         (self.sum / self.count as f64).to_string()
     }
+
+    fn source(&self) -> &str {
+        &self.source
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Avg, Aggregate};
+    use std::rc::Rc;
 
     #[test]
     fn test_avg() {
-        let mut Avg = Avg::new();
+        let mut Avg = Avg::new(Rc::new("".to_string()));
 
         Avg.update("3.0");
         Avg.update("2");
