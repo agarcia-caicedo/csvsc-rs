@@ -32,13 +32,11 @@ where
     }
 }
 
-impl<I> RowStream for MockStream<I> {
-    fn headers(&self) -> &Headers {
-        &self.headers
-    }
+struct IntoIter<I> {
+    iter: I,
 }
 
-impl<I> Iterator for MockStream<I>
+impl<I> Iterator for IntoIter<I>
 where
     I: Iterator<Item = RowResult>,
 {
@@ -46,6 +44,27 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
+    }
+}
+
+impl<I> IntoIterator for MockStream<I>
+where
+    I: Iterator<Item = RowResult>,
+{
+    type Item = RowResult;
+
+    type IntoIter = IntoIter<I>;
+
+    fn into_iter(self) -> Self::IntoIter {
+    }
+}
+
+impl<I> RowStream for MockStream<I>
+where
+    MockStream<I>: IntoIterator<Item = RowResult>,
+{
+    fn headers(&self) -> &Headers {
+        &self.headers
     }
 }
 

@@ -6,10 +6,10 @@ use std::collections::hash_map::{self, DefaultHasher};
 use std::hash::{Hash, Hasher};
 
 mod aggregate;
-mod groups;
+mod group;
 
 use aggregate::Aggregate;
-use groups::{Group, Groups};
+use group::{Group};
 
 #[derive(Debug)]
 pub enum ReducerBuildError {
@@ -116,7 +116,7 @@ pub struct Reducer<I> {
 }
 
 impl<I> Reducer<I>
-    where I: Iterator<Item = RowResult> + RowStream
+where I: RowStream
 {
     pub fn new(iter: I, grouping: Vec<&str>, columns: Vec<AggregatedCol>) -> Result<Reducer<I>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
@@ -163,8 +163,28 @@ impl<I> Reducer<I>
             headers,
         })
     }
+}
 
-    fn groups(self) -> Result<Groups, ConsumeError> {
+pub struct IntoIter {
+    iter: hash_map::IntoIter<u64, Group>,
+}
+
+impl Iterator for IntoIter {
+    type Item = RowResult;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|g| {
+            Ok(g.1.as_row())
+        })
+    }
+}
+
+impl<I> IntoIterator for Reducer<I> {
+    type Item = RowResult;
+
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
         let mut groups = HashMap::new();
         let aggregates = self.columns;
         let headers = self.headers;
@@ -185,7 +205,9 @@ impl<I> Reducer<I>
                 });
         }
 
-        Ok(Groups::from(groups))
+        IntoIter {
+            iter: self.into_iter(),
+        }
     }
 }
 

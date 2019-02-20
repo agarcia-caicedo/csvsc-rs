@@ -39,25 +39,3 @@ impl<'a> From<&'a Vec<AggregatedCol>> for Group {
         }
     }
 }
-
-pub struct Groups {
-    groups: hash_map::IntoIter<u64, Group>,
-}
-
-impl From<HashMap<u64, Group>> for Groups {
-    fn from(data: HashMap<u64, Group>) -> Groups {
-        Groups {
-            groups: data.into_iter(),
-        }
-    }
-}
-
-impl Iterator for Groups {
-    type Item = RowResult;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.groups.next().map(|g| {
-            Ok(g.1.as_row())
-        })
-    }
-}

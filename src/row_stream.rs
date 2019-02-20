@@ -1,11 +1,11 @@
 use std::collections::HashMap;
-use super::{Row, Headers};
+use super::{Row, RowResult, Headers};
 
 pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
     headers.get(field).and_then(|i| row.get(i))
 }
 
-pub trait RowStream {
+pub trait RowStream: IntoIterator<Item = RowResult> {
     fn headers(&self) -> &Headers;
 }
 

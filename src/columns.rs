@@ -171,16 +171,16 @@ impl FromStr for ColSpec {
     }
 }
 
-pub struct AddColumns<T> {
-    iter: T,
+pub struct AddColumns<I> {
+    iter: I,
     columns: Vec<ColSpec>,
     headers: Headers,
 }
 
-impl<T> AddColumns<T>
-    where T: Iterator<Item = RowResult> + RowStream
+impl<I> AddColumns<I>
+where I: RowStream
 {
-    pub fn new(iter: T, columns: Vec<ColSpec>) -> AddColumns<T> {
+    pub fn new(iter: I, columns: Vec<ColSpec>) -> AddColumns<I> {
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
@@ -198,13 +198,13 @@ impl<T> AddColumns<T>
     }
 }
 
-impl<I> RowStream for AddColumns<I> {
-    fn headers(&self) -> &Headers {
-        &self.headers
-    }
+struct IntoIter<I> {
+    iter: I
 }
 
-impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
+impl<I> Iterator for IntoIter<I>
+where I: Iterator<Item = RowResult>
+{
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -220,6 +220,29 @@ impl<T: Iterator<Item = RowResult>> Iterator for AddColumns<T> {
                 Ok(val)
             })
         })
+    }
+}
+
+impl<I> IntoIterator for AddColumns<I>
+where I: IntoIterator<Item = RowResult>
+{
+    type Item = RowResult;
+
+    type IntoIter = IntoIter<I::IntoIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            iter: self.iter.into_iter(),
+        }
+    }
+}
+
+impl<I> RowStream for AddColumns<I>
+where
+    AddColumns<I>: IntoIterator<Item = RowResult>,
+{
+    fn headers(&self) -> &Headers {
+        &self.headers
     }
 }
 
