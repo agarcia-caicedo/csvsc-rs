@@ -199,7 +199,9 @@ where I: RowStream
 }
 
 struct IntoIter<I> {
-    iter: I
+    iter: I,
+    columns: Vec<ColSpec>,
+    headers: Headers,
 }
 
 impl<I> Iterator for IntoIter<I>
@@ -211,7 +213,7 @@ where I: Iterator<Item = RowResult>
         self.iter.next().map(|result| {
             result.and_then(|mut val| {
                 for spec in self.columns.iter() {
-                    val.push_field(&match spec.compute(&val, self.headers()) {
+                    val.push_field(&match spec.compute(&val, &self.headers) {
                         Ok(s) => s,
                         Err(e) => e.to_csv(),
                     });
@@ -233,6 +235,8 @@ where I: IntoIterator<Item = RowResult>
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter {
             iter: self.iter.into_iter(),
+            columns: self.columns,
+            headers: self.headers,
         }
     }
 }

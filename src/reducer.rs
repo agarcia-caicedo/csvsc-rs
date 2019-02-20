@@ -179,7 +179,10 @@ impl Iterator for IntoIter {
     }
 }
 
-impl<I> IntoIterator for Reducer<I> {
+impl<I> IntoIterator for Reducer<I>
+where
+    I: Iterator<Item = RowResult>,
+{
     type Item = RowResult;
 
     type IntoIter = IntoIter;
@@ -211,7 +214,10 @@ impl<I> IntoIterator for Reducer<I> {
     }
 }
 
-impl<I> RowStream for Reducer<I> {
+impl<I> RowStream for Reducer<I>
+where
+    Reducer<I>: IntoIterator<Item = RowResult>
+{
     fn headers(&self) -> &Headers {
         &self.headers
     }
