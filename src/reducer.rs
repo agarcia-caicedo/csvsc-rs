@@ -193,7 +193,7 @@ where
         let headers = self.headers;
 
         for item in self.iter.filter_map(|c| c.ok()) {
-            let item_hash = hash(&headers, &item, &self.group_by)?;
+            let item_hash = hash(&headers, &item, &self.group_by).unwrap();
 
             groups.entry(item_hash)
                 .and_modify(|group: &mut Group| {
@@ -209,7 +209,7 @@ where
         }
 
         IntoIter {
-            iter: self.into_iter(),
+            iter: groups.into_iter(),
         }
     }
 }

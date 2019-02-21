@@ -198,7 +198,7 @@ where I: RowStream
     }
 }
 
-struct IntoIter<I> {
+pub struct IntoIter<I> {
     iter: I,
     columns: Vec<ColSpec>,
     headers: Headers,

@@ -1,5 +1,4 @@
-use std::collections::{hash_map, HashMap};
-use crate::{Row, RowResult, Headers, get_field};
+use crate::{Row, Headers, get_field};
 use super::{Aggregate, AggregatedCol};
 
 pub struct Group {

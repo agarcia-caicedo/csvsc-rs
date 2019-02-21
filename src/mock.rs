@@ -32,7 +32,7 @@ where
     }
 }
 
-struct IntoIter<I> {
+pub struct IntoIter<I> {
     iter: I,
 }
 
@@ -56,6 +56,9 @@ where
     type IntoIter = IntoIter<I>;
 
     fn into_iter(self) -> Self::IntoIter {
+        IntoIter {
+            iter: self.iter,
+        }
     }
 }
 
