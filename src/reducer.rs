@@ -181,7 +181,7 @@ impl Iterator for IntoIter {
 
 impl<I> IntoIterator for Reducer<I>
 where
-    I: Iterator<Item = RowResult>,
+    I: RowStream,
 {
     type Item = RowResult;
 
@@ -191,8 +191,9 @@ where
         let mut groups = HashMap::new();
         let aggregates = self.columns;
         let headers = self.headers;
+        let iter = self.iter.into_iter();
 
-        for item in self.iter.filter_map(|c| c.ok()) {
+        for item in iter.filter_map(|c| c.ok()) {
             let item_hash = hash(&headers, &item, &self.group_by).unwrap();
 
             groups.entry(item_hash)
@@ -225,7 +226,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reducer, Headers, hash, HashError};
+    use super::{Reducer, Headers, hash, HashError, RowResult};
     use crate::mock::MockStream;
     use crate::Row;
 
@@ -238,7 +239,8 @@ mod tests {
             Ok(Row::from(vec!["c", "a"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, Vec::new(), Vec::new()).unwrap().groups().unwrap();
+        let re = Reducer::new(iter, Vec::new(), Vec::new()).unwrap();
+        let r = re.into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -261,7 +263,10 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()]).unwrap().groups().unwrap();
+        let r = Reducer::new(
+            iter,
+            vec!["a"], vec!["new:avg:b".parse().unwrap()]
+        ).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -283,7 +288,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -305,7 +310,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -327,7 +332,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().groups().unwrap();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 

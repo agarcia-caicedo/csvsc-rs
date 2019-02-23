@@ -22,8 +22,7 @@ where
         }
     }
 
-    pub fn from_rows(mut iter: I) -> Result<MockStream<I>, BuildError>
-    {
+    pub fn from_rows(mut iter: I) -> Result<MockStream<I>, BuildError> {
         match iter.next() {
             Some(Ok(row)) => Ok(MockStream::new(iter, row)),
             Some(Err(_)) => Err(BuildError::FailedHeader),
@@ -84,6 +83,8 @@ mod tests {
         ].into_iter()).unwrap();
 
         assert_eq!(*m.headers(), Headers::from_row(Row::from(vec!["id", "num"])));
+
+        let mut m = m.into_iter();
 
         assert_eq!(m.next().unwrap().unwrap(), Row::from(vec!["1", "40"]));
         assert_eq!(m.next().unwrap().unwrap(), Row::from(vec!["2", "39"]));

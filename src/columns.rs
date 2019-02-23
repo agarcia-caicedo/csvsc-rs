@@ -226,7 +226,8 @@ where I: Iterator<Item = RowResult>
 }
 
 impl<I> IntoIterator for AddColumns<I>
-where I: IntoIterator<Item = RowResult>
+where
+    I: RowStream,
 {
     type Item = RowResult;
 
@@ -310,6 +311,8 @@ mod tests {
             *add_columns.headers(),
             Headers::from_row(Row::from(vec!["id", "val", "path", "new"])),
         );
+
+        let mut add_columns = add_columns.into_iter();
 
         assert_eq!(
             add_columns.next().unwrap().unwrap(),
