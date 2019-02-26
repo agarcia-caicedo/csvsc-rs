@@ -48,8 +48,10 @@ where
             Some(Ok(row)) => {
                 match self.get_target(&row) {
                     Ok(target) => {
-                        target.write_record(&row);
-                        Some(Ok(row))
+                        match target.write_record(&row) {
+                            Ok(_) => Some(Ok(row)),
+                            Err(e) => Some(Err(Error::Csv(e))),
+                        }
                     },
                     Err(err) => Some(Err(err)),
                 }
