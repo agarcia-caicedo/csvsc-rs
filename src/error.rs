@@ -11,6 +11,12 @@ pub enum Error {
 
 pub type RowResult = Result<Row, Error>;
 
+impl From<csv::Error> for Error {
+    fn from(error: csv::Error) -> Error {
+        Error::Csv(error)
+    }
+}
+
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {

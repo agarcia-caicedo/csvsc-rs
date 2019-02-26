@@ -6,6 +6,7 @@ use csvsc::ReaderSource;
 use csvsc::AddColumns;
 use csvsc::InputStream;
 use csvsc::Reducer;
+use csvsc::Flusher;
 use encoding::label::encoding_from_whatwg_label;
 
 fn main() {
@@ -121,8 +122,14 @@ fn main() {
         add_dest,
         Vec::new(),
         Vec::new(),
-    );
+    ).unwrap();
 
     // Step 5. Flush to destination
-    // Flusher(reducer).flush()
+    let mut flusher = Flusher::new(reducer).into_iter();
+
+    while let Some(item) = flusher.next() {
+        if let Err(error) = item {
+            eprintln!("{:?}", error);
+        }
+    }
 }

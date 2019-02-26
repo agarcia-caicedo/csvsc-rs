@@ -37,7 +37,6 @@ impl ColBuildError {
 
 // TODO replaceme with strfmt::format maybe
 fn interpolate(template: &str, captures: &Captures) -> String {
-    // strfmt(template, captures)
     let mut res = String::new();
 
     captures.expand(template, &mut res);
@@ -66,21 +65,19 @@ pub enum ColSpec {
 impl ColSpec {
     pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
         match *self {
-            ColSpec::Mix{ref coldef, ..} => {
-                match strfmt_map(&coldef, &|mut fmt: Formatter| {
-                    let v = match get_field(headers, data, fmt.key) {
-                        Some(v) => v,
-                        None => {
-                            return Err(FmtError::KeyError(fmt.key.to_string()));
-                        }
-                    };
-                    fmt.str(v)
-                }) {
-                    Ok(s) => Ok(s),
-                    Err(FmtError::Invalid(_)) => Err(ColBuildError::InvalidFormat),
-                    Err(FmtError::KeyError(_)) => Err(ColBuildError::KeyError),
-                    Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
-                }
+            ColSpec::Mix{ref coldef, ..} => match strfmt_map(&coldef, &|mut fmt: Formatter| {
+                let v = match get_field(headers, data, fmt.key) {
+                    Some(v) => v,
+                    None => {
+                        return Err(FmtError::KeyError(fmt.key.to_string()));
+                    }
+                };
+                fmt.str(v)
+            }) {
+                Ok(s) => Ok(s),
+                Err(FmtError::Invalid(_)) => Err(ColBuildError::InvalidFormat),
+                Err(FmtError::KeyError(_)) => Err(ColBuildError::KeyError),
+                Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
             },
             ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
                 match get_field(headers, data, source) {
@@ -205,7 +202,8 @@ pub struct IntoIter<I> {
 }
 
 impl<I> Iterator for IntoIter<I>
-where I: Iterator<Item = RowResult>
+where
+    I: Iterator<Item = RowResult>,
 {
     type Item = RowResult;
 
@@ -258,6 +256,7 @@ mod tests {
         interpolate,
     };
     use crate::mock::MockStream;
+    use crate::SOURCE_FIELD;
 
     #[test]
     fn test_colspec_simplest() {
@@ -276,7 +275,7 @@ mod tests {
         let data = Row::from(vec!["a20m"]);
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["_source"]))).unwrap(),
+            c.compute(&data, &Headers::from_row(Row::from(vec![SOURCE_FIELD]))).unwrap(),
             "20",
         );
     }

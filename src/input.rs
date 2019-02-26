@@ -7,7 +7,7 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use crate::error::{Error, RowResult};
 
-use super::Row;
+use super::{Row, SOURCE_FIELD};
 use super::Headers;
 use super::RowStream;
 
@@ -43,7 +43,7 @@ impl ReaderSource {
 
     fn headers(&mut self) -> ByteRecord {
         let mut data = self.reader.byte_headers().unwrap().clone();
-        data.push_field(b"_source");
+        data.push_field(SOURCE_FIELD.as_bytes());
 
         data
     }
@@ -161,7 +161,7 @@ mod tests {
 
         assert_eq!(
             *input_stream.headers(),
-            Row::from(vec!["a", "b", "_source"])
+            Row::from(vec!["a", "b", SOURCE_FIELD])
         );
 
         assert_eq!(
@@ -192,7 +192,7 @@ mod tests {
             WINDOWS_1252,
         );
 
-        assert_eq!(*input_stream.headers(), Row::from(vec!["name", "_source"]));
+        assert_eq!(*input_stream.headers(), Row::from(vec!["name", SOURCE_FIELD]));
 
         assert_eq!(
             input_stream.next().unwrap().unwrap(),
