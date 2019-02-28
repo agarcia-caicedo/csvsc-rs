@@ -8,7 +8,7 @@ pub struct Group {
 impl Group {
     pub fn update(&mut self, headers: &Headers, row: &Row) {
         for agg in self.contents.iter_mut() {
-            agg.update(get_field(headers, row, agg.source()).unwrap());
+            agg.update(get_field(headers, row, agg.source()).unwrap()).expect("could not update");
         }
     }
 
