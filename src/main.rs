@@ -4,7 +4,6 @@ use std::io;
 use csvsc::ColSpec;
 use csvsc::ReaderSource;
 use csvsc::InputStream;
-use csvsc::Flusher;
 use csvsc::RowStream;
 use encoding::label::encoding_from_whatwg_label;
 
@@ -99,7 +98,7 @@ fn main() {
         }), encoding);
 
     // Step 2. Map the info, add/remove, transform each row
-    let add_columns = input_stream
+    let mut chain = input_stream
         .add_columns(match matches.values_of("add_columns") {
             Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
             None => Vec::new(),
@@ -111,12 +110,10 @@ fn main() {
         .reduce(
             Vec::new(),
             Vec::new(),
-        ).expect("Error builing reducer");
+        ).expect("Error builing reducer")
+        .flush().into_iter();
 
-    // Step 5. Flush to destination
-    let mut flusher = Flusher::new(add_columns).into_iter();
-
-    while let Some(item) = flusher.next() {
+    while let Some(item) = chain.next() {
         if let Err(error) = item {
             eprintln!("{:?}", error);
         }

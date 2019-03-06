@@ -1,5 +1,5 @@
 use super::{
-    Row, RowResult, Headers, ColSpec, AddColumns, Reducer,
+    Row, RowResult, Headers, ColSpec, AddColumns, Reducer, Flusher,
     reducer::{ReducerBuildError, AggregatedCol},
 };
 
@@ -22,6 +22,13 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         Reducer::new(self, grouping, columns)
+    }
+
+    fn flush(self) -> Flusher<Self>
+    where
+        Self: Sized,
+    {
+        Flusher::new(self)
     }
 }
 
