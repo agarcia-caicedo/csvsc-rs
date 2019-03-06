@@ -168,7 +168,7 @@ impl FromStr for ColSpec {
     }
 }
 
-pub struct AddColumns<I> {
+pub struct AddColumns<I: RowStream> {
     iter: I,
     columns: Vec<ColSpec>,
     headers: Headers,
@@ -242,7 +242,7 @@ where
 
 impl<I> RowStream for AddColumns<I>
 where
-    AddColumns<I>: IntoIterator<Item = RowResult>,
+    I: RowStream,
 {
     fn headers(&self) -> &Headers {
         &self.headers

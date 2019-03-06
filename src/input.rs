@@ -142,7 +142,7 @@ impl Iterator for InputStream {
 
 #[cfg(test)]
 mod tests {
-    use super::{InputStream, ReaderSource, Row};
+    use super::{InputStream, ReaderSource, Row, SOURCE_FIELD};
     use crate::error::Error;
     use encoding::all::{UTF_8, WINDOWS_1252};
 
