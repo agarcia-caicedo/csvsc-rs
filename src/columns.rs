@@ -3,7 +3,7 @@ use std::str::FromStr;
 use regex::{Regex, Captures};
 use strfmt::{FmtError, strfmt_map, Formatter};
 
-use super::{Row, Headers, RowStream, get_field};
+use super::{Row, Headers, RowStream, get_field, error::Error};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {
@@ -22,17 +22,6 @@ pub enum ColBuildError {
     InvalidFormat,
     // TODO add the missing key
     KeyError,
-}
-
-impl ColBuildError {
-    fn to_csv(&self) -> String {
-        match *self {
-            ColBuildError::UnknownSource => "#NO_SOURCE".to_string(),
-            ColBuildError::ReNoMatch => "#RE_NO_MATCH".to_string(),
-            ColBuildError::InvalidFormat => "#FORMAT".to_string(),
-            ColBuildError::KeyError => "#KEY_ERROR".to_string(),
-        }
-    }
 }
 
 // TODO replaceme with strfmt::format maybe
@@ -211,10 +200,10 @@ where
         self.iter.next().map(|result| {
             result.and_then(|mut val| {
                 for spec in self.columns.iter() {
-                    val.push_field(&match spec.compute(&val, &self.headers) {
-                        Ok(s) => s,
-                        Err(e) => e.to_csv(),
-                    });
+                    match spec.compute(&val, &self.headers) {
+                        Ok(s) => val.push_field(&s),
+                        Err(e) => return Err(Error::ColBuildError(e)),
+                    }
                 }
 
                 Ok(val)

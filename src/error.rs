@@ -1,12 +1,14 @@
 use std::path::PathBuf;
 
 use super::Row;
+use super::columns::ColBuildError;
 
 #[derive(Debug)]
 pub enum Error {
     Csv(csv::Error),
     InconsistentSizeOfRows(PathBuf),
     InconsistentHeaders(PathBuf),
+    ColBuildError(ColBuildError),
 }
 
 pub type RowResult = Result<Row, Error>;
@@ -23,6 +25,7 @@ impl std::error::Error for Error {
             Error::Csv(_) => "CSV error",
             Error::InconsistentSizeOfRows(_) => "inconsistent size of rows",
             Error::InconsistentHeaders(_) => "inconsistent headers among files",
+            Error::ColBuildError(_) => "Error building a column",
         }
     }
 }
@@ -33,10 +36,13 @@ impl std::fmt::Display for Error {
             Error::Csv(ref e) => write!(f, "CSV error: {}", e),
             Error::InconsistentSizeOfRows(ref p) => {
                 write!(f, "inconsistent size of rows in {:?}", p)
-            }
+            },
             Error::InconsistentHeaders(ref p) => {
                 write!(f, "inconsistent headers among files in {:?}", p)
-            }
+            },
+            Error::ColBuildError(ref c) => {
+                write!(f, "Could not build column with reason: {:?}", c)
+            },
         }
     }
 }
