@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use super::{Row, RowResult, Headers, ColSpec, AddColumns};
+use super::{Row, RowResult, Headers};
 
 pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
     headers.get(field).and_then(|i| row.get(i))
