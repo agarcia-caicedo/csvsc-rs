@@ -1,4 +1,7 @@
-use super::{Row, RowResult, Headers, ColSpec, AddColumns};
+use super::{
+    Row, RowResult, Headers, ColSpec, AddColumns, Reducer,
+    reducer::{ReducerBuildError, AggregatedCol},
+};
 
 pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
     headers.get(field).and_then(|i| row.get(i))
@@ -12,6 +15,13 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         AddColumns::new(self, columns)
+    }
+
+    fn reduce(self, grouping: Vec<&str>, columns: Vec<AggregatedCol>) -> Result<Reducer<Self>, ReducerBuildError>
+    where
+        Self: Sized,
+    {
+        Reducer::new(self, grouping, columns)
     }
 }
 

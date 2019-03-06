@@ -3,9 +3,7 @@ use std::io;
 
 use csvsc::ColSpec;
 use csvsc::ReaderSource;
-use csvsc::AddColumns;
 use csvsc::InputStream;
-use csvsc::Reducer;
 use csvsc::Flusher;
 use csvsc::RowStream;
 use encoding::label::encoding_from_whatwg_label;
@@ -101,29 +99,22 @@ fn main() {
         }), encoding);
 
     // Step 2. Map the info, add/remove, transform each row
-    let add_columns = input_stream.add_columns(match matches.values_of("add_columns") {
-        Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
-        None => Vec::new(),
-    });
-
-    // Step 3. Stablish destination
-    let add_dest = AddColumns::new(
-        add_columns,
-        vec![ColSpec::Mix{
+    let add_columns = input_stream
+        .add_columns(match matches.values_of("add_columns") {
+            Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
+            None => Vec::new(),
+        })
+        .add_columns(vec![ColSpec::Mix{
             colname: "_target".to_string(),
             coldef: matches.value_of("output").unwrap().to_string(),
-        }],
-    );
-
-    // Step 4. Reduce, aggregate
-    let reducer = Reducer::new(
-        add_dest,
-        Vec::new(),
-        Vec::new(),
-    ).unwrap();
+        }])
+        .reduce(
+            Vec::new(),
+            Vec::new(),
+        ).expect("Error builing reducer");
 
     // Step 5. Flush to destination
-    let mut flusher = Flusher::new(reducer).into_iter();
+    let mut flusher = Flusher::new(add_columns).into_iter();
 
     while let Some(item) = flusher.next() {
         if let Err(error) = item {
