@@ -107,9 +107,6 @@ fn main() {
             colname: "_target".to_string(),
             coldef: matches.value_of("output").unwrap().to_string(),
         }])
-        .inspect(|r| {
-            eprintln!("{:?}", r);
-        })
         .reduce(
             match matches.values_of("group") {
                 Some(groupings) => groupings.collect(),
@@ -123,8 +120,9 @@ fn main() {
         .flush().into_iter();
 
     while let Some(item) = chain.next() {
-        if let Err(error) = item {
-            eprintln!("{:?}", error);
+        match item {
+            Ok(c) => eprintln!("wrote {:?}", c),
+            Err(e) => eprintln!("failed {:?}", e),
         }
     }
 }

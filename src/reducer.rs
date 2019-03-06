@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::rc::Rc;
 use std::collections::HashMap;
-use super::{Headers, RowStream, RowResult, Row, get_field};
+use super::{Headers, RowStream, RowResult, Row, get_field, Error};
 use std::collections::hash_map::{self, DefaultHasher};
 use std::hash::{Hash, Hasher};
 
@@ -35,7 +35,7 @@ impl From<HashError> for ConsumeError {
 /// `columns` are used to locate the values in `row` as specified by `headers`.
 ///
 /// If no columns are specified, a random hash is chosen.
-fn hash(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashError> {
+fn hash_row(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashError> {
     if columns.len() == 0 {
         return Ok(rand::random());
     }
@@ -166,6 +166,7 @@ where I: RowStream
 }
 
 pub struct IntoIter {
+    error: Option<Error>,
     iter: hash_map::IntoIter<u64, Group>,
 }
 
@@ -173,9 +174,12 @@ impl Iterator for IntoIter {
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|g| {
-            Ok(g.1.as_row())
-        })
+        match self.error.take() {
+            Some(e) => Some(Err(e)),
+            None => self.iter.next().map(|g| {
+                Ok(g.1.as_row())
+            })
+        }
     }
 }
 
@@ -189,28 +193,37 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         let mut groups = HashMap::new();
+        let mut error: Option<Error> = None;
         let aggregates = self.columns;
         let headers = self.headers;
         let iter = self.iter.into_iter();
 
-        for item in iter.filter_map(|c| c.ok()) {
-            let item_hash = hash(&headers, &item, &self.group_by).unwrap();
+        for result in iter {
+            match result {
+                Ok(item) => {
+                    let row_hash = hash_row(&headers, &item, &self.group_by).unwrap();
 
-            groups.entry(item_hash)
-                .and_modify(|group: &mut Group| {
-                    group.update(&headers, &item);
-                })
-                .or_insert_with(|| {
-                    let mut g = Group::from(&aggregates);
+                    groups.entry(row_hash)
+                        .and_modify(|group: &mut Group| {
+                            group.update(&headers, &item);
+                        })
+                        .or_insert_with(|| {
+                            let mut g = Group::from(&aggregates);
 
-                    g.update(&headers, &item);
+                            g.update(&headers, &item);
 
-                    g
-                });
+                            g
+                        });
+                },
+                Err(e) => {
+                    error.get_or_insert(e);
+                },
+            }
         }
 
         IntoIter {
             iter: groups.into_iter(),
+            error,
         }
     }
 }
@@ -226,8 +239,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reducer, Headers, hash, HashError, RowResult};
+    use super::{Reducer, Headers, hash_row, HashError, RowResult, Error};
     use crate::mock::MockStream;
+    use crate::columns::ColBuildError;
     use crate::Row;
 
     #[test]
@@ -345,23 +359,51 @@ mod tests {
     }
 
     #[test]
+    fn test_reducer_error() {
+        let iter = MockStream::from_rows(vec![
+            Ok(Row::from(vec!["a", "b"])),
+            Err(Error::ColBuildError(ColBuildError::InvalidFormat)),
+            Ok(Row::from(vec!["1", "2"])),
+            Ok(Row::from(vec!["1", "4"])),
+            Ok(Row::from(vec!["2", "7"])),
+            Ok(Row::from(vec!["2", "9"])),
+        ].into_iter()).unwrap();
+
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
+
+        match r.next().unwrap().unwrap_err() {
+            Error::ColBuildError(ColBuildError::InvalidFormat) => {},
+            _ => panic!("didn't expect this"),
+        }
+
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
+
+        assert_eq!(results, vec![
+            Row::from(vec!["1", "4", "6"]),
+            Row::from(vec!["2", "9", "16"]),
+        ]);
+    }
+
+    #[test]
     fn test_hash() {
         let header = Headers::from_row(Row::from(vec!["a", "b"]));
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["a".to_string()];
 
-        assert_eq!(hash(&header, &data, &cols).unwrap(), 16569625464242099095);
+        assert_eq!(hash_row(&header, &data, &cols).unwrap(), 16569625464242099095);
 
         let header = Headers::from_row(Row::from(vec!["a", "b"]));
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["a".to_string(), "b".to_string()];
 
-        assert_eq!(hash(&header, &data, &cols).unwrap(), 15633344752900483833);
+        assert_eq!(hash_row(&header, &data, &cols).unwrap(), 15633344752900483833);
 
         let header = Headers::from_row(Row::from(vec!["a", "b"]));
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["d".to_string()];
 
-        assert_eq!(hash(&header, &data, &cols), Err(HashError("d".to_string())));
+        assert_eq!(hash_row(&header, &data, &cols), Err(HashError("d".to_string())));
     }
 }

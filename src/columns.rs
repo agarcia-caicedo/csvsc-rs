@@ -18,10 +18,10 @@ pub enum ColSpecParseError {
 #[derive(Debug)]
 pub enum ColBuildError {
     UnknownSource,
-    ReNoMatch,
+    ReNoMatch(Regex, String),
     InvalidFormat,
     // TODO add the missing key
-    KeyError,
+    KeyError(String),
 }
 
 // TODO replaceme with strfmt::format maybe
@@ -65,14 +65,14 @@ impl ColSpec {
             }) {
                 Ok(s) => Ok(s),
                 Err(FmtError::Invalid(_)) => Err(ColBuildError::InvalidFormat),
-                Err(FmtError::KeyError(_)) => Err(ColBuildError::KeyError),
+                Err(FmtError::KeyError(s)) => Err(ColBuildError::KeyError(s)),
                 Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
             },
             ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
                 match get_field(headers, data, source) {
                     Some(field) => match regex.captures(field) {
                         Some(captures) => Ok(interpolate(&coldef, &captures)),
-                        None => Err(ColBuildError::ReNoMatch),
+                        None => Err(ColBuildError::ReNoMatch(regex.clone(), field.to_string())),
                     },
                     None => Err(ColBuildError::UnknownSource),
                 }
