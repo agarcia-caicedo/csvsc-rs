@@ -107,6 +107,9 @@ fn main() {
             colname: "_target".to_string(),
             coldef: matches.value_of("output").unwrap().to_string(),
         }])
+        .inspect(|r| {
+            eprintln!("{:?}", r);
+        })
         .reduce(
             match matches.values_of("group") {
                 Some(groupings) => groupings.collect(),
