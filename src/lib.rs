@@ -5,6 +5,7 @@ mod reducer;
 mod input;
 mod row_stream;
 mod flusher;
+mod inspect;
 
 pub mod mock;
 
@@ -15,6 +16,7 @@ pub use headers::Headers;
 pub use reducer::Reducer;
 pub use row_stream::{RowStream, get_field};
 pub use flusher::Flusher;
+pub use inspect::Inspect;
 
 type Row = csv::StringRecord;
 
