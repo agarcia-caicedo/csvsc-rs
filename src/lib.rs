@@ -13,7 +13,7 @@ pub use error::{Error, RowResult};
 pub use input::{InputStream, ReaderSource};
 pub use headers::Headers;
 pub use reducer::Reducer;
-pub use row_stream::{RowStream, get_field, pack};
+pub use row_stream::{RowStream, get_field};
 pub use flusher::Flusher;
 
 type Row = csv::StringRecord;

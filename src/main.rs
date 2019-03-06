@@ -7,6 +7,7 @@ use csvsc::AddColumns;
 use csvsc::InputStream;
 use csvsc::Reducer;
 use csvsc::Flusher;
+use csvsc::RowStream;
 use encoding::label::encoding_from_whatwg_label;
 
 fn main() {
@@ -100,13 +101,10 @@ fn main() {
         }), encoding);
 
     // Step 2. Map the info, add/remove, transform each row
-    let add_columns = AddColumns::new(
-        input_stream,
-        match matches.values_of("add_columns") {
-            Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
-            None => Vec::new(),
-        },
-    );
+    let add_columns = input_stream.add_columns(match matches.values_of("add_columns") {
+        Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
+        None => Vec::new(),
+    });
 
     // Step 3. Stablish destination
     let add_dest = AddColumns::new(

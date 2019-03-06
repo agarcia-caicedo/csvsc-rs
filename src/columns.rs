@@ -168,7 +168,7 @@ impl FromStr for ColSpec {
     }
 }
 
-pub struct AddColumns<I: RowStream> {
+pub struct AddColumns<I> {
     iter: I,
     columns: Vec<ColSpec>,
     headers: Headers,
