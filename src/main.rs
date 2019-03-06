@@ -108,8 +108,14 @@ fn main() {
             coldef: matches.value_of("output").unwrap().to_string(),
         }])
         .reduce(
-            Vec::new(),
-            Vec::new(),
+            match matches.values_of("group") {
+                Some(groupings) => groupings.collect(),
+                None => Vec::new(),
+            },
+            match matches.values_of("reduce") {
+                Some(reduce) => reduce.map(|r| r.parse().unwrap()).collect(),
+                None => Vec::new(),
+            },
         ).expect("Error builing reducer")
         .flush().into_iter();
 
