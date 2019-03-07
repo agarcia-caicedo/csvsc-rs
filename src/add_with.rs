@@ -11,6 +11,7 @@ pub struct AddWith<I, F> {
 impl<I, F> AddWith<I, F>
 where
     I: RowStream,
+    F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
 {
     pub fn new(iter: I, colname: &str, f: F) -> AddWith<I, F> {
         let mut headers = iter.headers().clone();
@@ -82,8 +83,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{interpolate, AddWith, ColSpec, Headers, Regex, Row, RowStream};
+    use super::{AddWith, Headers, Row, RowStream};
     use crate::mock::MockStream;
+    use crate::get_field;
 
     #[test]
     fn test_add() {

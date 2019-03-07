@@ -246,7 +246,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{hash_row, Error, HashError, Headers, Reducer};
-    use crate::columns::ColBuildError;
+    use crate::add::ColBuildError;
     use crate::mock::MockStream;
     use crate::Row;
 
