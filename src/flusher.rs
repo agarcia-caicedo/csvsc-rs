@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use csv::Writer;
 use super::{RowResult, Row, RowStream, Headers, get_field, TARGET_FIELD, Error};
-use std::fs::File;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
 
 pub struct Flusher<I> {
     iter: I,
@@ -19,7 +20,7 @@ where
 }
 
 pub struct IntoIter<I> {
-    targets: HashMap<String, Writer<File>>,
+    targets: HashMap<PathBuf, Writer<File>>,
     headers: Headers,
     iter: I,
 }
@@ -31,14 +32,17 @@ impl<I> IntoIter<I> {
         // TODO things that might fail in the closure should cause the Err variant
         // in this function's return value
         Ok(match get_field(&self.headers, row, TARGET_FIELD) {
-            Some(target) => self.targets.entry(target.to_string()).or_insert_with(|| {
+            Some(target) => self.targets.entry(PathBuf::from(target)).or_insert_with(|| {
+                let dirname = Path::new(target).parent().expect("Does not have a parent");
+                fs::create_dir_all(dirname).expect("Could not create directory");
+
                 let mut writer = Writer::from_path(target).expect(&format!("Cannot write to target {}", target));
 
                 writer.write_record(header_row).expect("Could not write headers");
 
                 writer
             }),
-            None => self.targets.entry("stdout".to_string()).or_insert_with(|| {
+            None => self.targets.entry(PathBuf::from("/dev/stdout")).or_insert_with(|| {
                 let mut writer = Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
 
                 writer.write_record(header_row).expect("Could not write headers");

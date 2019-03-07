@@ -120,9 +120,8 @@ fn main() {
         .flush().into_iter();
 
     while let Some(item) = chain.next() {
-        match item {
-            Ok(c) => eprintln!("wrote {:?}", c),
-            Err(e) => eprintln!("failed {:?}", e),
+        if let Err(e) = item {
+            eprintln!("failed {:?}", e);
         }
     }
 }
