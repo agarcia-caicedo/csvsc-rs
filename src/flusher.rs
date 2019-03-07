@@ -28,26 +28,24 @@ impl<I> IntoIter<I> {
     fn get_target(&mut self, row: &Row) -> Result<&mut Writer<File>, Error> {
         let header_row = self.headers.as_row();
 
-        match get_field(&self.headers, row, TARGET_FIELD) {
-            Some(target) => {
-                Ok(self.targets.entry(target.to_string()).or_insert_with(|| {
-                    let mut writer = Writer::from_path(target).expect(&format!("Cannot write to target {}", target));
+        // TODO things that might fail in the closure should cause the Err variant
+        // in this function's return value
+        Ok(match get_field(&self.headers, row, TARGET_FIELD) {
+            Some(target) => self.targets.entry(target.to_string()).or_insert_with(|| {
+                let mut writer = Writer::from_path(target).expect(&format!("Cannot write to target {}", target));
 
-                    writer.write_record(header_row).expect("Could not write headers");
+                writer.write_record(header_row).expect("Could not write headers");
 
-                    writer
-                }))
-            },
-            None => {
-                Ok(self.targets.entry("stdout".to_string()).or_insert_with(|| {
-                    let mut writer = Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
+                writer
+            }),
+            None => self.targets.entry("stdout".to_string()).or_insert_with(|| {
+                let mut writer = Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
 
-                    writer.write_record(header_row).expect("Could not write headers");
+                writer.write_record(header_row).expect("Could not write headers");
 
-                    writer
-                }))
-            },
-        }
+                writer
+            }),
+        })
     }
 }
 
