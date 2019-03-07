@@ -1,6 +1,7 @@
 use super::{
     reducer::{AggregatedCol, ReducerBuildError},
     Add, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult, AddWith,
+    AdjacentReduce,
     add::ColBuildError,
 };
 
@@ -38,6 +39,17 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         Reducer::new(self, grouping, columns)
+    }
+
+    fn adjacent_reduce(
+        self,
+        grouping: Vec<&str>,
+        columns: Vec<AggregatedCol>,
+    ) -> Result<AdjacentReduce<Self>, ReducerBuildError>
+    where
+        Self: Sized,
+    {
+        AdjacentReduce::new(self, grouping, columns)
     }
 
     fn flush(self) -> Flusher<Self>

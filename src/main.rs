@@ -45,9 +45,9 @@ fn main() {
         colname: "_target".to_string(),
         coldef: matches.value_of("output").unwrap().to_string(),
     }])
-    .reduce(
-        vec![],
-        vec![],
+    .adjacent_reduce(
+        vec!["Nombre_de", "Nombre_RHA"],
+        vec!["area:sum:supkm2".parse().unwrap()],
     )
     .unwrap()
     .flush()
