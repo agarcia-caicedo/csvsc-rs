@@ -1,9 +1,7 @@
-use super::{get_field, Error, Headers, Row, RowResult, RowStream};
-use std::collections::hash_map::{self, DefaultHasher};
+use super::{Error, Headers, RowResult, RowStream};
+use std::collections::hash_map;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-use std::str::FromStr;
 use crate::reducer::{
     aggregate, group::Group, ReducerBuildError, AggregatedCol, hash_row
 };
@@ -145,8 +143,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_row, Error, HashError, Headers, AdjacentReduce};
-    use crate::add::ColBuildError;
+    use super::AdjacentReduce;
     use crate::mock::MockStream;
     use crate::Row;
 
@@ -166,7 +163,7 @@ mod tests {
         let re = AdjacentReduce::new(iter, Vec::new(), Vec::new()).unwrap();
         let r = re.into_iter();
 
-        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         assert_eq!(
             results,
@@ -187,6 +184,7 @@ mod tests {
                 Ok(Row::from(vec!["1", "4"])),
                 Ok(Row::from(vec!["2", "7"])),
                 Ok(Row::from(vec!["2", "9"])),
+                Ok(Row::from(vec!["1", "4"])),
             ]
             .into_iter(),
         )
@@ -196,13 +194,14 @@ mod tests {
             .unwrap()
             .into_iter();
 
-        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         assert_eq!(
             results,
             vec![
                 Row::from(vec!["1", "4", "3"]),
                 Row::from(vec!["2", "9", "8"]),
+                Row::from(vec!["1", "4", "4"]),
             ]
         );
     }
@@ -216,6 +215,7 @@ mod tests {
                 Ok(Row::from(vec!["1", "4"])),
                 Ok(Row::from(vec!["2", "7"])),
                 Ok(Row::from(vec!["2", "9"])),
+                Ok(Row::from(vec!["1", "4"])),
             ]
             .into_iter(),
         )
@@ -225,13 +225,14 @@ mod tests {
             .unwrap()
             .into_iter();
 
-        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         assert_eq!(
             results,
             vec![
                 Row::from(vec!["1", "4", "2"]),
                 Row::from(vec!["2", "9", "7"]),
+                Row::from(vec!["1", "4", "4"]),
             ]
         );
     }
@@ -245,6 +246,7 @@ mod tests {
                 Ok(Row::from(vec!["1", "4"])),
                 Ok(Row::from(vec!["2", "7"])),
                 Ok(Row::from(vec!["2", "9"])),
+                Ok(Row::from(vec!["1", "4"])),
             ]
             .into_iter(),
         )
@@ -254,13 +256,14 @@ mod tests {
             .unwrap()
             .into_iter();
 
-        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         assert_eq!(
             results,
             vec![
                 Row::from(vec!["1", "4", "4"]),
                 Row::from(vec!["2", "9", "9"]),
+                Row::from(vec!["1", "4", "4"]),
             ]
         );
     }
@@ -274,6 +277,7 @@ mod tests {
                 Ok(Row::from(vec!["1", "4"])),
                 Ok(Row::from(vec!["2", "7"])),
                 Ok(Row::from(vec!["2", "9"])),
+                Ok(Row::from(vec!["1", "4"])),
             ]
             .into_iter(),
         )
@@ -283,13 +287,14 @@ mod tests {
             .unwrap()
             .into_iter();
 
-        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         assert_eq!(
             results,
             vec![
                 Row::from(vec!["1", "4", "6"]),
                 Row::from(vec!["2", "9", "16"]),
+                Row::from(vec!["1", "4", "4"]),
             ]
         );
     }
