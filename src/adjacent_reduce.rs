@@ -1,4 +1,4 @@
-use super::{Error, Headers, RowResult, RowStream};
+use super::{Error, Headers, Row, RowResult, RowStream};
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -15,7 +15,7 @@ use crate::reducer::{
 pub struct AdjacentReduce<I> {
     iter: I,
     group_by: Vec<String>,
-    columns: Vec<AggregatedCol>,
+    aggregates: Vec<AggregatedCol>,
     headers: Headers,
 }
 
@@ -26,7 +26,7 @@ where
     pub fn new(
         iter: I,
         grouping: Vec<&str>,
-        columns: Vec<AggregatedCol>,
+        aggregates: Vec<AggregatedCol>,
     ) -> Result<AdjacentReduce<I>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
@@ -39,7 +39,7 @@ where
             group_by.push(key.to_string());
         }
 
-        let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
+        let mut whole_columns = Vec::with_capacity(headers.len() + aggregates.len());
 
         for header in headers.iter() {
             let source = Rc::new(header.to_string());
@@ -51,7 +51,7 @@ where
             ));
         }
 
-        for col in columns.iter() {
+        for col in aggregates.iter() {
             if !headers.contains_key(col.source()) {
                 return Err(ReducerBuildError::AggregateSourceError(
                     col.source().to_string(),
@@ -59,36 +59,87 @@ where
             }
         }
 
-        for col in columns.iter() {
+        for col in aggregates.iter() {
             headers.add(col.colname());
         }
 
-        for column in columns {
+        for column in aggregates {
             whole_columns.push(column);
         }
 
         Ok(AdjacentReduce {
             iter,
             group_by,
-            columns: whole_columns,
+            aggregates: whole_columns,
             headers,
         })
     }
 }
 
-pub struct IntoIter {
-    error: Option<Error>,
-    iter: hash_map::IntoIter<u64, Group>,
+pub struct IntoIter<I> {
+    current_group: Option<Result<(u64, Group), Error>>,
+    headers: Headers,
+    group_by: Vec<String>,
+    aggregates: Vec<AggregatedCol>,
+    iter: I,
 }
 
-impl Iterator for IntoIter {
+impl<I> IntoIter<I>
+where
+    I: Iterator<Item = RowResult>,
+{
+    /// places the next available value of the source iterator as current value
+    fn place_next(&mut self) {
+        unimplemented!()
+    }
+
+    /// places the given row as the current group
+    fn place_row(&mut self, hash: u64, row: &Row) {
+        let mut g = Group::from(&self.aggregates);
+
+        g.update(&self.headers, &row);
+
+        self.current_group = Some(Ok((hash, g)));
+    }
+}
+
+impl<I> Iterator for IntoIter<I>
+where
+    I: Iterator<Item = RowResult>,
+{
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.error.take() {
-            Some(e) => Some(Err(e)),
-            None => self.iter.next().map(|g| Ok(g.1.as_row())),
-        }
+        self.current_group.take().map(|result| match result {
+            Ok((hash, mut group)) => {
+                loop {
+                    match self.iter.next() {
+                        Some(Ok(row)) => {
+                            let row_hash = hash_row(&self.headers, &row, &self.group_by).unwrap();
+
+                            if row_hash == hash {
+                                group.update(&self.headers, &row);
+                            } else {
+                                self.place_row(row_hash, &row);
+
+                                break Ok(group.as_row());
+                            }
+                        },
+                        Some(Err(e)) => {
+                            unimplemented!()
+                        },
+                        None => {
+                            unimplemented!()
+                        },
+                    }
+                }
+            },
+            Err(e) => {
+                self.place_next();
+
+                Err(e)
+            },
+        })
     }
 }
 
@@ -98,42 +149,29 @@ where
 {
     type Item = RowResult;
 
-    type IntoIter = IntoIter;
+    type IntoIter = IntoIter<I::IntoIter>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let mut groups = HashMap::new();
-        let mut error: Option<Error> = None;
-        let aggregates = self.columns;
+        let aggregates = self.aggregates;
         let headers = self.headers;
-        let iter = self.iter.into_iter();
+        let group_by = self.group_by;
+        let mut iter = self.iter.into_iter();
 
-        for result in iter {
-            match result {
-                Ok(item) => {
-                    let row_hash = hash_row(&headers, &item, &self.group_by).unwrap();
+        let current_group = iter.next().map(|result| result.map(|row| {
+            let row_hash = hash_row(&headers, &row, &group_by).unwrap();
+            let mut g = Group::from(&aggregates);
 
-                    groups
-                        .entry(row_hash)
-                        .and_modify(|group: &mut Group| {
-                            group.update(&headers, &item);
-                        })
-                        .or_insert_with(|| {
-                            let mut g = Group::from(&aggregates);
+            g.update(&headers, &row);
 
-                            g.update(&headers, &item);
-
-                            g
-                        });
-                }
-                Err(e) => {
-                    error.get_or_insert(e);
-                }
-            }
-        }
+            (row_hash, g)
+        }));
 
         IntoIter {
-            iter: groups.into_iter(),
-            error,
+            current_group,
+            headers,
+            group_by,
+            aggregates,
+            iter,
         }
     }
 }
@@ -152,6 +190,8 @@ mod tests {
     use super::AdjacentReduce;
     use crate::mock::MockStream;
     use crate::Row;
+    use crate::error::Error;
+    use crate::add::ColBuildError;
 
     #[test]
     fn test_reducer_id_function() {
@@ -303,5 +343,29 @@ mod tests {
                 Row::from(vec!["1", "4", "4"]),
             ]
         );
+    }
+
+    #[test]
+    fn test_reducer_errors() {
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Ok(Row::from(vec!["1", "2"])),
+                Err(Error::ColBuildError(ColBuildError::InvalidFormat)),
+                Err(Error::ColBuildError(ColBuildError::UnknownSource)),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+                Ok(Row::from(vec!["1", "4"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
+
+        let mut r = AdjacentReduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
+
+        panic!("should see 6 elements in iterator, including the two errors");
     }
 }
