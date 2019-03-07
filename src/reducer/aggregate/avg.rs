@@ -52,13 +52,13 @@ mod tests {
 
     #[test]
     fn test_avg() {
-        let mut Avg = Avg::new(Rc::new("".to_string()));
+        let mut avg = Avg::new(Rc::new("".to_string()));
 
-        Avg.update("3.0");
-        Avg.update("2");
-        Avg.update(".5");
-        Avg.update(".5");
+        avg.update("3.0").unwrap();
+        avg.update("2").unwrap();
+        avg.update(".5").unwrap();
+        avg.update(".5").unwrap();
 
-        assert_eq!(Avg.value(), "1.5");
+        assert_eq!(avg.value(), "1.5");
     }
 }

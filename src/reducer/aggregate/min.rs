@@ -64,9 +64,9 @@ mod tests {
     fn test_min() {
         let mut min = Min::new(Rc::new("".to_string()));
 
-        min.update("3.0");
-        min.update("2");
-        min.update(".5");
+        min.update("3.0").unwrap();
+        min.update("2").unwrap();
+        min.update(".5").unwrap();
 
         assert_eq!(min.value(), "0.5");
     }

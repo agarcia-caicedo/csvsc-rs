@@ -241,7 +241,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        AddColumns, ColSpec, Row, Headers, RowStream, Regex, Captures,
+        AddColumns, ColSpec, Row, Headers, RowStream, Regex,
         interpolate,
     };
     use crate::mock::MockStream;
@@ -290,7 +290,7 @@ mod tests {
             Ok(Row::from(vec!["4", "37", "/tmp/a2m.csv"])),
         ].into_iter()).unwrap();
 
-        let mut add_columns = AddColumns::new(
+        let add_columns = AddColumns::new(
             iter,
             vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
         );

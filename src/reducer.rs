@@ -239,7 +239,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reducer, Headers, hash_row, HashError, RowResult, Error};
+    use super::{Reducer, Headers, hash_row, HashError, Error};
     use crate::mock::MockStream;
     use crate::columns::ColBuildError;
     use crate::Row;
@@ -302,7 +302,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -324,7 +324,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
@@ -346,7 +346,7 @@ mod tests {
             Ok(Row::from(vec!["2", "9"])),
         ].into_iter()).unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 

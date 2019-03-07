@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_mock_stream() {
-        let mut m = MockStream::from_rows(vec![
+        let m = MockStream::from_rows(vec![
             Ok(Row::from(vec!["id", "num"])),
             Ok(Row::from(vec!["1", "40"])),
             Ok(Row::from(vec!["2", "39"])),

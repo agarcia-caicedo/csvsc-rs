@@ -47,9 +47,9 @@ mod tests {
     fn test_last() {
         let mut sum = Last::new(Rc::new("".to_string()));
 
-        sum.update("3.0");
-        sum.update("2");
-        sum.update(".5");
+        sum.update("3.0").unwrap();
+        sum.update("2").unwrap();
+        sum.update(".5").unwrap();
 
         assert_eq!(sum.value(), ".5");
     }

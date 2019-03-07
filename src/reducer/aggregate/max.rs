@@ -64,9 +64,9 @@ mod tests {
     fn test_max() {
         let mut max = Max::new(Rc::new("".to_string()));
 
-        max.update("3.0");
-        max.update("2");
-        max.update(".5");
+        max.update("3.0").unwrap();
+        max.update("2").unwrap();
+        max.update(".5").unwrap();
 
         assert_eq!(max.value(), "3");
     }
