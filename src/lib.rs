@@ -22,7 +22,8 @@ pub use row_stream::{get_field, RowStream};
 pub use add_with::AddWith;
 pub use adjacent_reduce::AdjacentReduce;
 
-type Row = csv::StringRecord;
+/// Type alias of csv::StringRecord. Represents a row of data.
+pub type Row = csv::StringRecord;
 
 const TARGET_FIELD: &'static str = "_target";
 // TODO delete this and make it dynamic
