@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::columns::ColBuildError;
+use super::add::ColBuildError;
 use super::Row;
 
 #[derive(Debug)]

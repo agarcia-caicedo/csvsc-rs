@@ -38,10 +38,10 @@ fn main() {
             .map(|f| ReaderSource::from_path(f).unwrap()),
         ISO_8859_1,
     )
-    .add_columns(vec![r"regex:_source:variable:$1:(\w+)-(\w+)-(\d).csv$"
+    .add(vec![r"regex:_source:variable:$1:(\w+)-(\w+)-(\d).csv$"
         .parse()
         .unwrap()])
-    .add_columns(vec![ColSpec::Mix {
+    .add(vec![ColSpec::Mix {
         colname: "_target".to_string(),
         coldef: matches.value_of("output").unwrap().to_string(),
     }])

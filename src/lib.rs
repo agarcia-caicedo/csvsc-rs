@@ -1,4 +1,4 @@
-mod columns;
+mod add;
 mod error;
 mod flusher;
 mod headers;
@@ -9,7 +9,7 @@ mod row_stream;
 
 pub mod mock;
 
-pub use columns::{AddColumns, ColSpec};
+pub use add::{Add, ColSpec};
 pub use error::{Error, RowResult};
 pub use flusher::Flusher;
 pub use headers::Headers;

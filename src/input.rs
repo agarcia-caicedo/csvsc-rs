@@ -69,7 +69,7 @@ impl InputStream {
         );
 
         for item in iter {
-            input_stream.add(item);
+            InputStream::add(&mut input_stream, item);
         }
 
         input_stream

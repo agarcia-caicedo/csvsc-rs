@@ -154,17 +154,17 @@ impl FromStr for ColSpec {
     }
 }
 
-pub struct AddColumns<I> {
+pub struct Add<I> {
     iter: I,
     columns: Vec<ColSpec>,
     headers: Headers,
 }
 
-impl<I> AddColumns<I>
+impl<I> Add<I>
 where
     I: RowStream,
 {
-    pub fn new(iter: I, columns: Vec<ColSpec>) -> AddColumns<I> {
+    pub fn new(iter: I, columns: Vec<ColSpec>) -> Add<I> {
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
@@ -174,7 +174,7 @@ where
             });
         }
 
-        AddColumns {
+        Add{
             iter,
             columns,
             headers,
@@ -210,7 +210,7 @@ where
     }
 }
 
-impl<I> IntoIterator for AddColumns<I>
+impl<I> IntoIterator for Add<I>
 where
     I: RowStream,
 {
@@ -227,7 +227,7 @@ where
     }
 }
 
-impl<I> RowStream for AddColumns<I>
+impl<I> RowStream for Add<I>
 where
     I: RowStream,
 {
@@ -238,7 +238,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{interpolate, AddColumns, ColSpec, Headers, Regex, Row, RowStream};
+    use super::{interpolate, Add, ColSpec, Headers, Regex, Row, RowStream};
     use crate::mock::MockStream;
     use crate::SOURCE_FIELD;
 
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_columns() {
+    fn test_add() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["id", "val", "path"])),
@@ -294,32 +294,32 @@ mod tests {
         )
         .unwrap();
 
-        let add_columns = AddColumns::new(
+        let add= Add::new(
             iter,
             vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
         );
 
         assert_eq!(
-            *add_columns.headers(),
+            *add.headers(),
             Headers::from_row(Row::from(vec!["id", "val", "path", "new"])),
         );
 
-        let mut add_columns = add_columns.into_iter();
+        let mut add= add.into_iter();
 
         assert_eq!(
-            add_columns.next().unwrap().unwrap(),
+            add.next().unwrap().unwrap(),
             Row::from(vec!["1", "40", "/tmp/a1m.csv", "1"])
         );
         assert_eq!(
-            add_columns.next().unwrap().unwrap(),
+            add.next().unwrap().unwrap(),
             Row::from(vec!["2", "39", "/tmp/a1m.csv", "1"])
         );
         assert_eq!(
-            add_columns.next().unwrap().unwrap(),
+            add.next().unwrap().unwrap(),
             Row::from(vec!["3", "38", "/tmp/a2m.csv", "2"])
         );
         assert_eq!(
-            add_columns.next().unwrap().unwrap(),
+            add.next().unwrap().unwrap(),
             Row::from(vec!["4", "37", "/tmp/a2m.csv", "2"])
         );
     }
