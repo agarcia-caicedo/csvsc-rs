@@ -1,8 +1,8 @@
 use clap::{App, Arg};
 
 use csvsc::ColSpec;
-use csvsc::ReaderSource;
 use csvsc::InputStream;
+use csvsc::ReaderSource;
 use csvsc::RowStream;
 use encoding::all::ISO_8859_1;
 
@@ -33,28 +33,31 @@ fn main() {
 
     // Step 2. Map the info, add/remove, transform each row
     let mut chain = InputStream::from_readers(
-            filenames
-                .iter()
-                .map(|f| ReaderSource::from_path(f).unwrap()), ISO_8859_1
-        )
-        .add_columns(vec![
-            r"regex:_source:variable:$1:(\w+)-(\w+)-(\d).csv$".parse().unwrap(),
-        ])
-        .add_columns(vec![ColSpec::Mix{
-            colname: "_target".to_string(),
-            coldef: matches.value_of("output").unwrap().to_string(),
-        }])
-        .reduce(
-            match matches.values_of("group") {
-                Some(groupings) => groupings.collect(),
-                None => Vec::new(),
-            },
-            match matches.values_of("reduce") {
-                Some(reduce) => reduce.map(|r| r.parse().unwrap()).collect(),
-                None => Vec::new(),
-            },
-        ).expect("Error builing reducer")
-        .flush().into_iter();
+        filenames
+            .iter()
+            .map(|f| ReaderSource::from_path(f).unwrap()),
+        ISO_8859_1,
+    )
+    .add_columns(vec![r"regex:_source:variable:$1:(\w+)-(\w+)-(\d).csv$"
+        .parse()
+        .unwrap()])
+    .add_columns(vec![ColSpec::Mix {
+        colname: "_target".to_string(),
+        coldef: matches.value_of("output").unwrap().to_string(),
+    }])
+    .reduce(
+        match matches.values_of("group") {
+            Some(groupings) => groupings.collect(),
+            None => Vec::new(),
+        },
+        match matches.values_of("reduce") {
+            Some(reduce) => reduce.map(|r| r.parse().unwrap()).collect(),
+            None => Vec::new(),
+        },
+    )
+    .expect("Error builing reducer")
+    .flush()
+    .into_iter();
 
     while let Some(item) = chain.next() {
         if let Err(e) = item {

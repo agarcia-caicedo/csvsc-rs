@@ -1,5 +1,5 @@
-use crate::{Row, Headers, get_field};
 use super::{Aggregate, AggregatedCol};
+use crate::{get_field, Headers, Row};
 
 pub struct Group {
     contents: Vec<Box<dyn Aggregate>>,
@@ -8,7 +8,8 @@ pub struct Group {
 impl Group {
     pub fn update(&mut self, headers: &Headers, row: &Row) {
         for agg in self.contents.iter_mut() {
-            agg.update(get_field(headers, row, agg.source()).unwrap()).expect("could not update");
+            agg.update(get_field(headers, row, agg.source()).unwrap())
+                .expect("could not update");
         }
     }
 
@@ -33,8 +34,6 @@ impl<'a> From<&'a Vec<AggregatedCol>> for Group {
             contents.push((*item.aggregate()).clone());
         }
 
-        Group {
-            contents,
-        }
+        Group { contents }
     }
 }

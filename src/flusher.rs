@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use super::{get_field, Error, Headers, Row, RowResult, RowStream, TARGET_FIELD};
 use csv::Writer;
-use super::{RowResult, Row, RowStream, Headers, get_field, TARGET_FIELD, Error};
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
@@ -13,9 +13,7 @@ where
     I: RowStream,
 {
     pub fn new(iter: I) -> Flusher<I> {
-        Flusher {
-            iter,
-        }
+        Flusher { iter }
     }
 }
 
@@ -32,23 +30,35 @@ impl<I> IntoIter<I> {
         // TODO things that might fail in the closure should cause the Err variant
         // in this function's return value
         Ok(match get_field(&self.headers, row, TARGET_FIELD) {
-            Some(target) => self.targets.entry(PathBuf::from(target)).or_insert_with(|| {
-                let dirname = Path::new(target).parent().expect("Does not have a parent");
-                fs::create_dir_all(dirname).expect("Could not create directory");
+            Some(target) => self
+                .targets
+                .entry(PathBuf::from(target))
+                .or_insert_with(|| {
+                    let dirname = Path::new(target).parent().expect("Does not have a parent");
+                    fs::create_dir_all(dirname).expect("Could not create directory");
 
-                let mut writer = Writer::from_path(target).expect(&format!("Cannot write to target {}", target));
+                    let mut writer = Writer::from_path(target)
+                        .expect(&format!("Cannot write to target {}", target));
 
-                writer.write_record(header_row).expect("Could not write headers");
+                    writer
+                        .write_record(header_row)
+                        .expect("Could not write headers");
 
-                writer
-            }),
-            None => self.targets.entry(PathBuf::from("/dev/stdout")).or_insert_with(|| {
-                let mut writer = Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
+                    writer
+                }),
+            None => self
+                .targets
+                .entry(PathBuf::from("/dev/stdout"))
+                .or_insert_with(|| {
+                    let mut writer =
+                        Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
 
-                writer.write_record(header_row).expect("Could not write headers");
+                    writer
+                        .write_record(header_row)
+                        .expect("Could not write headers");
 
-                writer
-            }),
+                    writer
+                }),
         })
     }
 }
@@ -61,18 +71,14 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
-            Some(Ok(row)) => {
-                match self.get_target(&row) {
-                    Ok(target) => {
-                        match target.write_record(&row) {
-                            Ok(_) => Some(Ok(row)),
-                            Err(e) => Some(Err(Error::Csv(e))),
-                        }
-                    },
-                    Err(err) => Some(Err(err)),
-                }
+            Some(Ok(row)) => match self.get_target(&row) {
+                Ok(target) => match target.write_record(&row) {
+                    Ok(_) => Some(Ok(row)),
+                    Err(e) => Some(Err(Error::Csv(e))),
+                },
+                Err(err) => Some(Err(err)),
             },
-            err@Some(Err(_)) => err,
+            err @ Some(Err(_)) => err,
             None => None,
         }
     }

@@ -1,7 +1,7 @@
+use super::{Aggregate, AggregateError};
 use std::rc::Rc;
-use super::{AggregateError, Aggregate};
 
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub struct Avg {
     source: Rc<String>,
     sum: f64,
@@ -31,7 +31,7 @@ impl Aggregate for Avg {
                 self.count += 1;
 
                 Ok(())
-            },
+            }
             Err(_) => Err(AggregateError::Parse),
         }
     }
@@ -47,7 +47,7 @@ impl Aggregate for Avg {
 
 #[cfg(test)]
 mod tests {
-    use super::{Avg, Aggregate};
+    use super::{Aggregate, Avg};
     use std::rc::Rc;
 
     #[test]

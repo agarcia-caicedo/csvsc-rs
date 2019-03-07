@@ -1,22 +1,22 @@
 mod columns;
 mod error;
-mod headers;
-mod reducer;
-mod input;
-mod row_stream;
 mod flusher;
+mod headers;
+mod input;
 mod inspect;
+mod reducer;
+mod row_stream;
 
 pub mod mock;
 
 pub use columns::{AddColumns, ColSpec};
 pub use error::{Error, RowResult};
-pub use input::{InputStream, ReaderSource};
-pub use headers::Headers;
-pub use reducer::Reducer;
-pub use row_stream::{RowStream, get_field};
 pub use flusher::Flusher;
+pub use headers::Headers;
+pub use input::{InputStream, ReaderSource};
 pub use inspect::Inspect;
+pub use reducer::Reducer;
+pub use row_stream::{get_field, RowStream};
 
 type Row = csv::StringRecord;
 

@@ -1,6 +1,6 @@
-use super::{Row, Headers, RowStream, RowResult};
+use super::{Headers, Row, RowResult, RowStream};
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum BuildError {
     EmptyIterator,
     FailedHeader,
@@ -26,7 +26,7 @@ where
         match iter.next() {
             Some(Ok(row)) => Ok(MockStream::new(iter, row)),
             Some(Err(_)) => Err(BuildError::FailedHeader),
-            None => Err(BuildError::EmptyIterator)
+            None => Err(BuildError::EmptyIterator),
         }
     }
 }
@@ -55,9 +55,7 @@ where
     type IntoIter = IntoIter<I>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter {
-            iter: self.iter,
-        }
+        IntoIter { iter: self.iter }
     }
 }
 
@@ -72,17 +70,24 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{MockStream, RowStream, Row, Headers};
+    use super::{Headers, MockStream, Row, RowStream};
 
     #[test]
     fn test_mock_stream() {
-        let m = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["id", "num"])),
-            Ok(Row::from(vec!["1", "40"])),
-            Ok(Row::from(vec!["2", "39"])),
-        ].into_iter()).unwrap();
+        let m = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["id", "num"])),
+                Ok(Row::from(vec!["1", "40"])),
+                Ok(Row::from(vec!["2", "39"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        assert_eq!(*m.headers(), Headers::from_row(Row::from(vec!["id", "num"])));
+        assert_eq!(
+            *m.headers(),
+            Headers::from_row(Row::from(vec!["id", "num"]))
+        );
 
         let mut m = m.into_iter();
 

@@ -1,6 +1,6 @@
-use std::rc::Rc;
+use super::{Aggregate, AggregateError};
 use std::f64;
-use super::{AggregateError, Aggregate};
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Min {
@@ -41,7 +41,7 @@ impl Aggregate for Min {
                 }
 
                 Ok(())
-            },
+            }
             Err(_) => Err(AggregateError::Parse),
         }
     }
@@ -57,7 +57,7 @@ impl Aggregate for Min {
 
 #[cfg(test)]
 mod tests {
-    use super::{Min, Aggregate};
+    use super::{Aggregate, Min};
     use std::rc::Rc;
 
     #[test]

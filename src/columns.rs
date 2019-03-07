@@ -1,9 +1,9 @@
 use crate::error::RowResult;
+use regex::{Captures, Regex};
 use std::str::FromStr;
-use regex::{Regex, Captures};
-use strfmt::{FmtError, strfmt_map, Formatter};
+use strfmt::{strfmt_map, FmtError, Formatter};
 
-use super::{Row, Headers, RowStream, get_field, error::Error};
+use super::{error::Error, get_field, Headers, Row, RowStream};
 
 #[derive(Debug)]
 pub enum ColSpecParseError {
@@ -37,7 +37,7 @@ fn interpolate(template: &str, captures: &Captures) -> String {
 pub enum ColSpec {
     /// Builds a new column based on a previous one, taking information from
     /// a regular expression.
-    Regex{
+    Regex {
         source: String,
         colname: String,
         coldef: String,
@@ -45,16 +45,13 @@ pub enum ColSpec {
     },
 
     /// Adds a new column based on a mix template of existing ones
-    Mix{
-        colname: String,
-        coldef: String,
-    },
+    Mix { colname: String, coldef: String },
 }
 
 impl ColSpec {
     pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
         match *self {
-            ColSpec::Mix{ref coldef, ..} => match strfmt_map(&coldef, &|mut fmt: Formatter| {
+            ColSpec::Mix { ref coldef, .. } => match strfmt_map(&coldef, &|mut fmt: Formatter| {
                 let v = match get_field(headers, data, fmt.key) {
                     Some(v) => v,
                     None => {
@@ -68,14 +65,17 @@ impl ColSpec {
                 Err(FmtError::KeyError(s)) => Err(ColBuildError::KeyError(s)),
                 Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
             },
-            ColSpec::Regex{ref source, ref coldef, ref regex, ..} => {
-                match get_field(headers, data, source) {
-                    Some(field) => match regex.captures(field) {
-                        Some(captures) => Ok(interpolate(&coldef, &captures)),
-                        None => Err(ColBuildError::ReNoMatch(regex.clone(), field.to_string())),
-                    },
-                    None => Err(ColBuildError::UnknownSource),
-                }
+            ColSpec::Regex {
+                ref source,
+                ref coldef,
+                ref regex,
+                ..
+            } => match get_field(headers, data, source) {
+                Some(field) => match regex.captures(field) {
+                    Some(captures) => Ok(interpolate(&coldef, &captures)),
+                    None => Err(ColBuildError::ReNoMatch(regex.clone(), field.to_string())),
+                },
+                None => Err(ColBuildError::UnknownSource),
             },
         }
     }
@@ -122,7 +122,7 @@ impl FromStr for ColSpec {
                 return Err(ColSpecParseError::MissingRegex);
             }
 
-            Ok(ColSpec::Regex{
+            Ok(ColSpec::Regex {
                 source,
                 colname,
                 coldef,
@@ -147,10 +147,7 @@ impl FromStr for ColSpec {
                 return Err(ColSpecParseError::MissingColDef);
             }
 
-            Ok(ColSpec::Mix{
-                colname,
-                coldef,
-            })
+            Ok(ColSpec::Mix { colname, coldef })
         } else {
             Err(ColSpecParseError::InvalidSpec)
         }
@@ -164,15 +161,16 @@ pub struct AddColumns<I> {
 }
 
 impl<I> AddColumns<I>
-where I: RowStream
+where
+    I: RowStream,
 {
     pub fn new(iter: I, columns: Vec<ColSpec>) -> AddColumns<I> {
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
             headers.add(match col {
-                ColSpec::Regex{colname, ..} => colname,
-                ColSpec::Mix{colname, ..} => colname,
+                ColSpec::Regex { colname, .. } => colname,
+                ColSpec::Mix { colname, .. } => colname,
             });
         }
 
@@ -240,10 +238,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        AddColumns, ColSpec, Row, Headers, RowStream, Regex,
-        interpolate,
-    };
+    use super::{interpolate, AddColumns, ColSpec, Headers, Regex, Row, RowStream};
     use crate::mock::MockStream;
     use crate::SOURCE_FIELD;
 
@@ -253,18 +248,22 @@ mod tests {
         let data = Row::new();
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["a"]))).unwrap(),
+            c.compute(&data, &Headers::from_row(Row::from(vec!["a"])))
+                .unwrap(),
             "value",
         );
     }
 
     #[test]
     fn test_colspec_regex_source() {
-        let c: ColSpec = "regex:_source:new:${number}:a(?P<number>[0-9]+)m".parse().unwrap();
+        let c: ColSpec = "regex:_source:new:${number}:a(?P<number>[0-9]+)m"
+            .parse()
+            .unwrap();
         let data = Row::from(vec!["a20m"]);
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec![SOURCE_FIELD]))).unwrap(),
+            c.compute(&data, &Headers::from_row(Row::from(vec![SOURCE_FIELD])))
+                .unwrap(),
             "20",
         );
     }
@@ -275,20 +274,25 @@ mod tests {
         let data = Row::from(vec!["2", "4"]);
 
         assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["a", "b"]))).unwrap(),
+            c.compute(&data, &Headers::from_row(Row::from(vec!["a", "b"])))
+                .unwrap(),
             "2-4",
         );
     }
 
     #[test]
     fn test_add_columns() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["id", "val", "path"])),
-            Ok(Row::from(vec!["1", "40", "/tmp/a1m.csv"])),
-            Ok(Row::from(vec!["2", "39", "/tmp/a1m.csv"])),
-            Ok(Row::from(vec!["3", "38", "/tmp/a2m.csv"])),
-            Ok(Row::from(vec!["4", "37", "/tmp/a2m.csv"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["id", "val", "path"])),
+                Ok(Row::from(vec!["1", "40", "/tmp/a1m.csv"])),
+                Ok(Row::from(vec!["2", "39", "/tmp/a1m.csv"])),
+                Ok(Row::from(vec!["3", "38", "/tmp/a2m.csv"])),
+                Ok(Row::from(vec!["4", "37", "/tmp/a2m.csv"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
         let add_columns = AddColumns::new(
             iter,
@@ -322,10 +326,14 @@ mod tests {
 
     #[test]
     fn test_interpolate() {
-        let regex = Regex::new(r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})").unwrap();
+        let regex =
+            Regex::new(r"(?P<year>[0-9]{4})-(?P<month>[0-9]{2})-(?P<day>[0-9]{2})").unwrap();
         let captures = regex.captures("2019-02-09").unwrap();
         let template = String::from("Día: ${day} mes: ${month} año: ${year}");
 
-        assert_eq!(interpolate(&template, &captures), "Día: 09 mes: 02 año: 2019");
+        assert_eq!(
+            interpolate(&template, &captures),
+            "Día: 09 mes: 02 año: 2019"
+        );
     }
 }

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use super::Row;
 use super::columns::ColBuildError;
+use super::Row;
 
 #[derive(Debug)]
 pub enum Error {
@@ -36,13 +36,11 @@ impl std::fmt::Display for Error {
             Error::Csv(ref e) => write!(f, "CSV error: {}", e),
             Error::InconsistentSizeOfRows(ref p) => {
                 write!(f, "inconsistent size of rows in {:?}", p)
-            },
+            }
             Error::InconsistentHeaders(ref p) => {
                 write!(f, "inconsistent headers among files in {:?}", p)
-            },
-            Error::ColBuildError(ref c) => {
-                write!(f, "Could not build column with reason: {:?}", c)
-            },
+            }
+            Error::ColBuildError(ref c) => write!(f, "Could not build column with reason: {:?}", c),
         }
     }
 }

@@ -1,15 +1,15 @@
-use std::str::FromStr;
-use std::rc::Rc;
-use std::collections::HashMap;
-use super::{Headers, RowStream, RowResult, Row, get_field, Error};
+use super::{get_field, Error, Headers, Row, RowResult, RowStream};
 use std::collections::hash_map::{self, DefaultHasher};
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
+use std::str::FromStr;
 
 mod aggregate;
 mod group;
 
 use aggregate::Aggregate;
-use group::{Group};
+use group::Group;
 
 #[derive(Debug)]
 pub enum ReducerBuildError {
@@ -17,7 +17,7 @@ pub enum ReducerBuildError {
     AggregateSourceError(String),
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 struct HashError(String);
 
 #[derive(Debug)]
@@ -116,9 +116,14 @@ pub struct Reducer<I> {
 }
 
 impl<I> Reducer<I>
-where I: RowStream
+where
+    I: RowStream,
 {
-    pub fn new(iter: I, grouping: Vec<&str>, columns: Vec<AggregatedCol>) -> Result<Reducer<I>, ReducerBuildError> {
+    pub fn new(
+        iter: I,
+        grouping: Vec<&str>,
+        columns: Vec<AggregatedCol>,
+    ) -> Result<Reducer<I>, ReducerBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
@@ -144,7 +149,9 @@ where I: RowStream
 
         for col in columns.iter() {
             if !headers.contains_key(col.source()) {
-                return Err(ReducerBuildError::AggregateSourceError(col.source().to_string()));
+                return Err(ReducerBuildError::AggregateSourceError(
+                    col.source().to_string(),
+                ));
             }
         }
 
@@ -176,9 +183,7 @@ impl Iterator for IntoIter {
     fn next(&mut self) -> Option<Self::Item> {
         match self.error.take() {
             Some(e) => Some(Err(e)),
-            None => self.iter.next().map(|g| {
-                Ok(g.1.as_row())
-            })
+            None => self.iter.next().map(|g| Ok(g.1.as_row())),
         }
     }
 }
@@ -203,7 +208,8 @@ where
                 Ok(item) => {
                     let row_hash = hash_row(&headers, &item, &self.group_by).unwrap();
 
-                    groups.entry(row_hash)
+                    groups
+                        .entry(row_hash)
                         .and_modify(|group: &mut Group| {
                             group.update(&headers, &item);
                         })
@@ -214,10 +220,10 @@ where
 
                             g
                         });
-                },
+                }
                 Err(e) => {
                     error.get_or_insert(e);
-                },
+                }
             }
         }
 
@@ -230,7 +236,7 @@ where
 
 impl<I> RowStream for Reducer<I>
 where
-    Reducer<I>: IntoIterator<Item = RowResult>
+    Reducer<I>: IntoIterator<Item = RowResult>,
 {
     fn headers(&self) -> &Headers {
         &self.headers
@@ -239,19 +245,23 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reducer, Headers, hash_row, HashError, Error};
-    use crate::mock::MockStream;
+    use super::{hash_row, Error, HashError, Headers, Reducer};
     use crate::columns::ColBuildError;
+    use crate::mock::MockStream;
     use crate::Row;
 
     #[test]
     fn test_reducer_id_function() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["name", "_target"])),
-            Ok(Row::from(vec!["a", "a"])),
-            Ok(Row::from(vec!["b", "a"])),
-            Ok(Row::from(vec!["c", "a"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["name", "_target"])),
+                Ok(Row::from(vec!["a", "a"])),
+                Ok(Row::from(vec!["b", "a"])),
+                Ok(Row::from(vec!["c", "a"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
         let re = Reducer::new(iter, Vec::new(), Vec::new()).unwrap();
         let r = re.into_iter();
@@ -260,119 +270,161 @@ mod tests {
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["a", "a"]),
-            Row::from(vec!["b", "a"]),
-            Row::from(vec!["c", "a"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["a", "a"]),
+                Row::from(vec!["b", "a"]),
+                Row::from(vec!["c", "a"]),
+            ]
+        );
     }
 
     #[test]
     fn test_reducer_avg() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b"])),
-            Ok(Row::from(vec!["1", "2"])),
-            Ok(Row::from(vec!["1", "4"])),
-            Ok(Row::from(vec!["2", "7"])),
-            Ok(Row::from(vec!["2", "9"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Ok(Row::from(vec!["1", "2"])),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        let r = Reducer::new(
-            iter,
-            vec!["a"], vec!["new:avg:b".parse().unwrap()]
-        ).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["1", "4", "3"]),
-            Row::from(vec!["2", "9", "8"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["1", "4", "3"]),
+                Row::from(vec!["2", "9", "8"]),
+            ]
+        );
     }
 
     #[test]
     fn test_reducer_min() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b"])),
-            Ok(Row::from(vec!["1", "2"])),
-            Ok(Row::from(vec!["1", "4"])),
-            Ok(Row::from(vec!["2", "7"])),
-            Ok(Row::from(vec!["2", "9"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Ok(Row::from(vec!["1", "2"])),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["1", "4", "2"]),
-            Row::from(vec!["2", "9", "7"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["1", "4", "2"]),
+                Row::from(vec!["2", "9", "7"]),
+            ]
+        );
     }
 
     #[test]
     fn test_reducer_max() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b"])),
-            Ok(Row::from(vec!["1", "2"])),
-            Ok(Row::from(vec!["1", "4"])),
-            Ok(Row::from(vec!["2", "7"])),
-            Ok(Row::from(vec!["2", "9"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Ok(Row::from(vec!["1", "2"])),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["1", "4", "4"]),
-            Row::from(vec!["2", "9", "9"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["1", "4", "4"]),
+                Row::from(vec!["2", "9", "9"]),
+            ]
+        );
     }
 
     #[test]
     fn test_reducer_sum() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b"])),
-            Ok(Row::from(vec!["1", "2"])),
-            Ok(Row::from(vec!["1", "4"])),
-            Ok(Row::from(vec!["2", "7"])),
-            Ok(Row::from(vec!["2", "9"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Ok(Row::from(vec!["1", "2"])),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
+        let r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["1", "4", "6"]),
-            Row::from(vec!["2", "9", "16"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["1", "4", "6"]),
+                Row::from(vec!["2", "9", "16"]),
+            ]
+        );
     }
 
     #[test]
     fn test_reducer_error() {
-        let iter = MockStream::from_rows(vec![
-            Ok(Row::from(vec!["a", "b"])),
-            Err(Error::ColBuildError(ColBuildError::InvalidFormat)),
-            Ok(Row::from(vec!["1", "2"])),
-            Ok(Row::from(vec!["1", "4"])),
-            Ok(Row::from(vec!["2", "7"])),
-            Ok(Row::from(vec!["2", "9"])),
-        ].into_iter()).unwrap();
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a", "b"])),
+                Err(Error::ColBuildError(ColBuildError::InvalidFormat)),
+                Ok(Row::from(vec!["1", "2"])),
+                Ok(Row::from(vec!["1", "4"])),
+                Ok(Row::from(vec!["2", "7"])),
+                Ok(Row::from(vec!["2", "9"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()]).unwrap().into_iter();
+        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+            .unwrap()
+            .into_iter();
 
         match r.next().unwrap().unwrap_err() {
-            Error::ColBuildError(ColBuildError::InvalidFormat) => {},
+            Error::ColBuildError(ColBuildError::InvalidFormat) => {}
             _ => panic!("didn't expect this"),
         }
 
@@ -380,10 +432,13 @@ mod tests {
 
         results.sort_by(|a, b| a.as_slice().cmp(b.as_slice()));
 
-        assert_eq!(results, vec![
-            Row::from(vec!["1", "4", "6"]),
-            Row::from(vec!["2", "9", "16"]),
-        ]);
+        assert_eq!(
+            results,
+            vec![
+                Row::from(vec!["1", "4", "6"]),
+                Row::from(vec!["2", "9", "16"]),
+            ]
+        );
     }
 
     #[test]
@@ -392,18 +447,27 @@ mod tests {
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["a".to_string()];
 
-        assert_eq!(hash_row(&header, &data, &cols).unwrap(), 16569625464242099095);
+        assert_eq!(
+            hash_row(&header, &data, &cols).unwrap(),
+            16569625464242099095
+        );
 
         let header = Headers::from_row(Row::from(vec!["a", "b"]));
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["a".to_string(), "b".to_string()];
 
-        assert_eq!(hash_row(&header, &data, &cols).unwrap(), 15633344752900483833);
+        assert_eq!(
+            hash_row(&header, &data, &cols).unwrap(),
+            15633344752900483833
+        );
 
         let header = Headers::from_row(Row::from(vec!["a", "b"]));
         let data = Row::from(vec!["1", "2"]);
         let cols = vec!["d".to_string()];
 
-        assert_eq!(hash_row(&header, &data, &cols), Err(HashError("d".to_string())));
+        assert_eq!(
+            hash_row(&header, &data, &cols),
+            Err(HashError("d".to_string()))
+        );
     }
 }

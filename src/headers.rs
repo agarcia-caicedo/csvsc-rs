@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-use std::cmp::PartialEq;
 use csv::StringRecordIter;
+use std::cmp::PartialEq;
+use std::collections::HashMap;
 
 use super::Row;
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Headers {
     indexes: HashMap<String, usize>,
     names: Row,
@@ -26,7 +26,8 @@ impl Headers {
 
     pub fn add(&mut self, colname: &str) {
         self.names.push_field(colname);
-        self.indexes.insert(colname.to_string(), self.names.len()-1);
+        self.indexes
+            .insert(colname.to_string(), self.names.len() - 1);
     }
 
     pub fn len(&self) -> usize {

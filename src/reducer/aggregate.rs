@@ -1,16 +1,16 @@
 use std::fmt::Debug;
 
-mod sum;
-mod last;
 mod avg;
-mod min;
+mod last;
 mod max;
+mod min;
+mod sum;
 
-pub use sum::Sum;
-pub use last::Last;
 pub use avg::Avg;
-pub use min::Min;
+pub use last::Last;
 pub use max::Max;
+pub use min::Min;
+pub use sum::Sum;
 
 #[derive(Debug)]
 pub enum AggregateError {

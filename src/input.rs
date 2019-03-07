@@ -1,15 +1,15 @@
+use crate::error::{Error, RowResult};
 use csv::Reader;
 use csv::{ByteRecord, ByteRecordsIntoIter};
 use encoding::{DecoderTrap, EncodingRef};
 use std::clone::Clone;
-use std::fs::File;
 use std::collections::VecDeque;
+use std::fs::File;
 use std::path::{Path, PathBuf};
-use crate::error::{Error, RowResult};
 
-use super::{Row, SOURCE_FIELD};
 use super::Headers;
 use super::RowStream;
+use super::{Row, SOURCE_FIELD};
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     let mut row = Row::with_capacity(data.as_slice().len(), data.len());
@@ -192,7 +192,10 @@ mod tests {
             WINDOWS_1252,
         );
 
-        assert_eq!(*input_stream.headers(), Row::from(vec!["name", SOURCE_FIELD]));
+        assert_eq!(
+            *input_stream.headers(),
+            Row::from(vec!["name", SOURCE_FIELD])
+        );
 
         assert_eq!(
             input_stream.next().unwrap().unwrap(),

@@ -1,7 +1,7 @@
+use super::{Aggregate, AggregateError};
 use std::rc::Rc;
-use super::{AggregateError, Aggregate};
 
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub struct Sum {
     source: Rc<String>,
     total: f64,
@@ -41,7 +41,7 @@ impl Aggregate for Sum {
 
 #[cfg(test)]
 mod tests {
-    use super::{Sum, Aggregate};
+    use super::{Aggregate, Sum};
     use std::rc::Rc;
 
     #[test]

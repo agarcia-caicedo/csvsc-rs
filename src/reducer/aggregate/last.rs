@@ -1,7 +1,7 @@
+use super::{Aggregate, AggregateError};
 use std::rc::Rc;
-use super::{AggregateError, Aggregate};
 
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 pub struct Last {
     source: Rc<String>,
     current: String,
@@ -40,7 +40,7 @@ impl Aggregate for Last {
 
 #[cfg(test)]
 mod tests {
-    use super::{Last, Aggregate};
+    use super::{Aggregate, Last};
     use std::rc::Rc;
 
     #[test]

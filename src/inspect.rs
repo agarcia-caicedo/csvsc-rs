@@ -16,11 +16,7 @@ where
     pub fn new(iter: I, f: F) -> Inspect<I, F> {
         let headers = iter.headers().clone();
 
-        Inspect {
-            iter,
-            f,
-            headers,
-        }
+        Inspect { iter, f, headers }
     }
 }
 

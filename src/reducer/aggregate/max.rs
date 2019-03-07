@@ -1,6 +1,6 @@
-use std::rc::Rc;
+use super::{Aggregate, AggregateError};
 use std::f64;
-use super::{AggregateError, Aggregate};
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Max {
@@ -41,7 +41,7 @@ impl Aggregate for Max {
                 }
 
                 Ok(())
-            },
+            }
             Err(_) => Err(AggregateError::Parse),
         }
     }
@@ -57,7 +57,7 @@ impl Aggregate for Max {
 
 #[cfg(test)]
 mod tests {
-    use super::{Max, Aggregate};
+    use super::{Aggregate, Max};
     use std::rc::Rc;
 
     #[test]

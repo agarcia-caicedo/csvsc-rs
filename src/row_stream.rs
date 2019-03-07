@@ -1,6 +1,6 @@
 use super::{
-    Row, RowResult, Headers, ColSpec, AddColumns, Reducer, Flusher, Inspect,
-    reducer::{ReducerBuildError, AggregatedCol},
+    reducer::{AggregatedCol, ReducerBuildError},
+    AddColumns, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult,
 };
 
 pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
@@ -17,7 +17,11 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         AddColumns::new(self, columns)
     }
 
-    fn reduce(self, grouping: Vec<&str>, columns: Vec<AggregatedCol>) -> Result<Reducer<Self>, ReducerBuildError>
+    fn reduce(
+        self,
+        grouping: Vec<&str>,
+        columns: Vec<AggregatedCol>,
+    ) -> Result<Reducer<Self>, ReducerBuildError>
     where
         Self: Sized,
     {
