@@ -21,7 +21,6 @@ pub enum ColBuildError {
     UnknownSource,
     ReNoMatch(Regex, String),
     InvalidFormat,
-    // TODO add the missing key
     KeyError(String),
 }
 

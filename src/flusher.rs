@@ -66,6 +66,18 @@ impl<I> IntoIter<I> {
     }
 }
 
+fn trim_underscores(headers: &Headers, row: &Row) -> Row {
+    let mut new_row = Row::with_capacity(row.as_slice().len(), row.len());
+
+    for (h, f) in headers.iter().zip(row.iter()) {
+        if !h.starts_with('_') {
+            new_row.push_field(f);
+        }
+    }
+
+    new_row
+}
+
 impl<I> Iterator for IntoIter<I>
 where
     I: Iterator<Item = RowResult>,
@@ -74,12 +86,16 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
-            Some(Ok(row)) => match self.get_target(&row) {
-                Ok(target) => match target.write_record(&row) {
-                    Ok(_) => Some(Ok(row)),
-                    Err(e) => Some(Err(Error::Csv(e))),
-                },
-                Err(err) => Some(Err(err)),
+            Some(Ok(row)) => {
+                let trimmed_row = trim_underscores(&self.headers, &row);
+
+                match self.get_target(&row) {
+                    Ok(target) => match target.write_record(&trimmed_row) {
+                        Ok(_) => Some(Ok(row)),
+                        Err(e) => Some(Err(Error::Csv(e))),
+                    },
+                    Err(err) => Some(Err(err)),
+                }
             },
             err @ Some(Err(_)) => err,
             None => None,

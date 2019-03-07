@@ -6,6 +6,8 @@ use super::Row;
 /// An error found somewhere in the transformation chain.
 #[derive(Debug)]
 pub enum Error {
+    // TODO remove the Csv variant and derive partialeq, eq and hash. This will
+    // allow for errors to be grouped and streamed in groups
     Csv(csv::Error),
     InconsistentSizeOfRows(PathBuf),
     InconsistentHeaders(PathBuf),
