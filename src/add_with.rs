@@ -11,7 +11,7 @@ pub struct AddWith<I, F> {
 impl<I, F> AddWith<I, F>
 where
     I: RowStream,
-    F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
+    F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
     pub fn new(iter: I, colname: &str, f: F) -> AddWith<I, F> {
         let mut headers = iter.headers().clone();
@@ -35,7 +35,7 @@ pub struct IntoIter<I, F> {
 impl<I, F> Iterator for IntoIter<I, F>
 where
     I: Iterator<Item = RowResult>,
-    F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
+    F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
     type Item = RowResult;
 
@@ -56,7 +56,7 @@ where
 impl<I, F> IntoIterator for AddWith<I, F>
 where
     I: RowStream,
-    F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
+    F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
     type Item = RowResult;
 
@@ -74,7 +74,7 @@ where
 impl<I, F> RowStream for AddWith<I, F>
 where
     I: RowStream,
-    F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
+    F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
     fn headers(&self) -> &Headers {
         &self.headers

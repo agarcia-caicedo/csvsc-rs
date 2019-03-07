@@ -21,7 +21,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn add_with<F>(self, colname: &str, f: F) -> AddWith<Self, F>
     where
         Self: Sized,
-        F: Fn(&Headers, &Row) -> Result<String, ColBuildError>,
+        F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
     {
         AddWith::new(self, colname, f)
     }
