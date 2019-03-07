@@ -4,6 +4,32 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
+fn trim_underscores(headers: &Headers, row: &Row) -> Row {
+    // FIXME bad estimate here of row size
+    let mut new_row = Row::with_capacity(row.as_slice().len(), row.len());
+
+    for (h, f) in headers.iter().zip(row.iter()) {
+        if !h.starts_with('_') {
+            new_row.push_field(f);
+        }
+    }
+
+    new_row
+}
+
+fn trim_header_underscores(headers: &Row) -> Row {
+    let mut new_row = Row::with_capacity(
+        headers.iter().filter(|h| !h.starts_with('_')).map(|h| h.len()).fold(0, |acc, n| acc + n),
+        headers.iter().filter(|h| !h.starts_with('_')).count()
+    );
+
+    for h in headers.iter().filter(|h| !h.starts_with('_')) {
+        new_row.push_field(h);
+    }
+
+    new_row
+}
+
 /// Flushes the rows to the destination specified by a column.
 ///
 /// Fields starting with underscore are not written.
@@ -28,7 +54,7 @@ pub struct IntoIter<I> {
 
 impl<I> IntoIter<I> {
     fn get_target(&mut self, row: &Row) -> Result<&mut Writer<File>, Error> {
-        let header_row = self.headers.as_row();
+        let header_row = trim_header_underscores(self.headers.as_row());
 
         // TODO things that might fail in the closure should cause the Err variant
         // in this function's return value
@@ -44,7 +70,7 @@ impl<I> IntoIter<I> {
                         .expect(&format!("Cannot write to target {}", target));
 
                     writer
-                        .write_record(header_row)
+                        .write_record(&header_row)
                         .expect("Could not write headers");
 
                     writer
@@ -57,25 +83,13 @@ impl<I> IntoIter<I> {
                         Writer::from_path("/dev/stdout").expect("Could not write to /dev/stdout");
 
                     writer
-                        .write_record(header_row)
+                        .write_record(&header_row)
                         .expect("Could not write headers");
 
                     writer
                 }),
         })
     }
-}
-
-fn trim_underscores(headers: &Headers, row: &Row) -> Row {
-    let mut new_row = Row::with_capacity(row.as_slice().len(), row.len());
-
-    for (h, f) in headers.iter().zip(row.iter()) {
-        if !h.starts_with('_') {
-            new_row.push_field(f);
-        }
-    }
-
-    new_row
 }
 
 impl<I> Iterator for IntoIter<I>
