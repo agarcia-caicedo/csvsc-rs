@@ -90,7 +90,14 @@ where
 {
     /// places the next available value of the source iterator as current value
     fn place_next(&mut self) {
-        unimplemented!()
+        self.current_group = self.iter.next().map(|result| result.map(|row| {
+            let row_hash = hash_row(&self.headers, &row, &self.group_by).unwrap();
+            let mut g = Group::from(&self.aggregates);
+
+            g.update(&self.headers, &row);
+
+            (row_hash, g)
+        }));
     }
 
     /// places the given row as the current group
@@ -100,6 +107,10 @@ where
         g.update(&self.headers, &row);
 
         self.current_group = Some(Ok((hash, g)));
+    }
+
+    fn place_err(&mut self, error: Error) {
+        self.current_group = Some(Err(error));
     }
 
     fn place_none(&mut self) {
@@ -130,7 +141,9 @@ where
                             }
                         },
                         Some(Err(e)) => {
-                            unimplemented!()
+                            self.place_err(e);
+
+                            break Ok(group.as_row());
                         },
                         None => {
                             self.place_none();
@@ -368,10 +381,26 @@ mod tests {
         )
         .unwrap();
 
-        let mut r = AdjacentReduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+        let mut r = AdjacentReduce::new(iter, vec!["a"], vec![])
             .unwrap()
             .into_iter();
 
-        panic!("should see 6 elements in iterator, including the two errors");
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "2"]));
+
+        match r.next().unwrap().unwrap_err() {
+            Error::ColBuildError(ColBuildError::InvalidFormat) => {},
+            _ => panic!("failed"),
+        }
+
+        match r.next().unwrap().unwrap_err() {
+            Error::ColBuildError(ColBuildError::UnknownSource) => {},
+            _ => panic!("failed"),
+        }
+
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "4"]));
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["2", "9"]));
+        assert_eq!(r.next().unwrap().unwrap(), Row::from(vec!["1", "4"]));
+
+        assert!(r.next().is_none());
     }
 }
