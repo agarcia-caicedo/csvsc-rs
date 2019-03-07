@@ -9,7 +9,7 @@ mod reducer;
 mod adjacent_reduce;
 mod row_stream;
 
-mod mock;
+pub mod mock;
 
 pub use add::{Add, ColSpec};
 pub use error::{Error, RowResult};

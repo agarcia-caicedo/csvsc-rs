@@ -1,3 +1,4 @@
+//! Provides a source of data from a vector, used in testing
 use super::{Headers, Row, RowResult, RowStream};
 
 #[derive(Debug, PartialEq)]

@@ -1,6 +1,4 @@
 use super::{Error, Headers, Row, RowResult, RowStream};
-use std::collections::hash_map;
-use std::collections::HashMap;
 use std::rc::Rc;
 use crate::reducer::{
     aggregate, group::Group, ReducerBuildError, AggregatedCol, hash_row
