@@ -18,6 +18,7 @@ pub use input::{InputStream, ReaderSource};
 pub use inspect::Inspect;
 pub use reducer::Reducer;
 pub use row_stream::{get_field, RowStream};
+pub use add_with::AddWith;
 
 type Row = csv::StringRecord;
 
