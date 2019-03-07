@@ -101,6 +101,10 @@ where
 
         self.current_group = Some(Ok((hash, g)));
     }
+
+    fn place_none(&mut self) {
+        self.current_group = None;
+    }
 }
 
 impl<I> Iterator for IntoIter<I>
@@ -129,7 +133,9 @@ where
                             unimplemented!()
                         },
                         None => {
-                            unimplemented!()
+                            self.place_none();
+
+                            break Ok(group.as_row());
                         },
                     }
                 }
