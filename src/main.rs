@@ -1,11 +1,10 @@
 use clap::{App, Arg};
-use std::io;
 
 use csvsc::ColSpec;
 use csvsc::ReaderSource;
 use csvsc::InputStream;
 use csvsc::RowStream;
-use encoding::label::encoding_from_whatwg_label;
+use encoding::all::ISO_8859_1;
 
 fn main() {
     let matches = App::new("csvsc")
@@ -27,82 +26,20 @@ fn main() {
                 .help("Output filename")
                 .required(true),
         )
-        .arg(
-            Arg::with_name("encoding")
-                .short("e")
-                .long("input-encoding")
-                .value_name("ENCODING")
-                .default_value("utf-8")
-                .help("The encoding to use while reading the files")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("add_columns")
-                .short("a")
-                .long("add-columns")
-                .value_name("COLUMN_SPEC")
-                .help("Columns to add to the input")
-                .multiple(true)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("reduce")
-                .short("r")
-                .long("reduce")
-                .value_name("REDUCE_SPEC")
-                .help("Reduce using the specified rules")
-                .multiple(true)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("group")
-                .short("g")
-                .long("group-by")
-                .value_name("GROUP_SPEC")
-                .help("How to group for aggregates")
-                .multiple(true)
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("filter")
-                .short("f")
-                .long("filter")
-                .value_name("FILTER_SPEC")
-                .help("Exclude some rows from the output")
-                .takes_value(true),
-        )
         .get_matches();
 
     // Step 1. Get the source
     let filenames: Vec<_> = matches.values_of("input").unwrap().collect();
-    let encoding = encoding_from_whatwg_label(matches.value_of("encoding").unwrap())
-        .expect("Invalid encoding, check whatwg list");
-
-    let input_stream = InputStream::from_readers(filenames
-        .iter()
-        .filter_map(|f| match csv::Reader::from_path(f) {
-            Ok(reader) => Some(ReaderSource::from_reader(reader, f)),
-
-            Err(e) => {
-                match e.kind() {
-                    csv::ErrorKind::Io(error) => match error.kind() {
-                        io::ErrorKind::PermissionDenied => eprintln!("Permission denied: {}", f),
-                        io::ErrorKind::NotFound => eprintln!("Not found: {}", f),
-                        _ => eprintln!("IO Error: {}", f),
-                    },
-                    _ => eprintln!("This shouldn't happen, please report to mantainer"),
-                }
-
-                None
-            }
-        }), encoding);
 
     // Step 2. Map the info, add/remove, transform each row
-    let mut chain = input_stream
-        .add_columns(match matches.values_of("add_columns") {
-            Some(columns) => columns.map(|s| s.parse().unwrap()).collect(),
-            None => Vec::new(),
-        })
+    let mut chain = InputStream::from_readers(
+            filenames
+                .iter()
+                .map(|f| ReaderSource::from_path(f).unwrap()), ISO_8859_1
+        )
+        .add_columns(vec![
+            r"regex:_source:variable:$1:(\w+)-(\w+)-(\d).csv$".parse().unwrap(),
+        ])
         .add_columns(vec![ColSpec::Mix{
             colname: "_target".to_string(),
             coldef: matches.value_of("output").unwrap().to_string(),
