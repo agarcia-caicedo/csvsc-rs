@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use super::Row;
 
+/// A structure for keeping relationship between the headers and their positions
 #[derive(Debug, Clone, PartialEq)]
 pub struct Headers {
     indexes: HashMap<String, usize>,

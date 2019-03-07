@@ -4,10 +4,13 @@ use super::{
     add::ColBuildError,
 };
 
+/// Helper function that retrieves a field from a row given it's header name
 pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
     headers.get(field).and_then(|i| row.get(i))
 }
 
+/// This trait describes de behaviour of every component in the CSV transformation
+/// chain
 pub trait RowStream: IntoIterator<Item = RowResult> {
     fn headers(&self) -> &Headers;
 

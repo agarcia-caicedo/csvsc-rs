@@ -154,6 +154,8 @@ impl FromStr for ColSpec {
     }
 }
 
+/// Adds multiple columns to each register. They can be based on existing ones
+/// or the source filename.
 pub struct Add<I> {
     iter: I,
     columns: Vec<ColSpec>,

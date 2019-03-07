@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use super::add::ColBuildError;
 use super::Row;
 
+/// An error found somewhere in the transformation chain.
 #[derive(Debug)]
 pub enum Error {
     Csv(csv::Error),
@@ -11,6 +12,8 @@ pub enum Error {
     ColBuildError(ColBuildError),
 }
 
+/// The type that actually flows the transformation chain. Either a row or an
+/// error.
 pub type RowResult = Result<Row, Error>;
 
 impl From<csv::Error> for Error {

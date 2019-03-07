@@ -2,6 +2,9 @@ use crate::error::RowResult;
 use super::{error::Error, Headers, RowStream, Row};
 use crate::add::ColBuildError;
 
+/// Adds a column to each register using a closure to generate its data.
+///
+/// The closure is passed the existing headers and current row.
 pub struct AddWith<I, F> {
     iter: I,
     f: F,

@@ -21,6 +21,7 @@ fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     row
 }
 
+/// Represents a file as source of CSV data.
 pub struct ReaderSource {
     reader: Reader<File>,
     path: PathBuf,
@@ -49,6 +50,7 @@ impl ReaderSource {
     }
 }
 
+/// A structure for creating a transformation chain from input files.
 pub struct InputStream {
     readers: VecDeque<ReaderSource>,
     current_records: ByteRecordsIntoIter<File>,

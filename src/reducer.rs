@@ -116,6 +116,7 @@ impl FromStr for AggregatedCol {
     }
 }
 
+/// Used to aggregate the rows, yielding the results as a new stream of rows.
 pub struct Reducer<I> {
     iter: I,
     group_by: Vec<String>,

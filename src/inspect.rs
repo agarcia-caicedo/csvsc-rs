@@ -2,6 +2,7 @@ use crate::error::RowResult;
 
 use super::{Headers, RowStream};
 
+/// Allows calling a closure on each row, just like in rust's Iterator trait.
 pub struct Inspect<I, F> {
     iter: I,
     f: F,

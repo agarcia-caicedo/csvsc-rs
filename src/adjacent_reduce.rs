@@ -6,6 +6,12 @@ use crate::reducer::{
     aggregate, group::Group, ReducerBuildError, AggregatedCol, hash_row
 };
 
+/// This reducer assumes that the grouping criteria will match contiguous groups
+/// in the original data, aplying reducers to them and yielding the results when
+/// a different group is found.
+///
+/// A group with the same hash can be found later in the data and it's going to
+/// be treated as a different group if it's not contiguous to a previous one.
 pub struct AdjacentReduce<I> {
     iter: I,
     group_by: Vec<String>,

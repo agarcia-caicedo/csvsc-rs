@@ -4,6 +4,9 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
+/// Flushes the rows to the destination specified by a column.
+///
+/// Fields starting with underscore are not written.
 pub struct Flusher<I> {
     iter: I,
 }
