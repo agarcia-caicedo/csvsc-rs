@@ -1,3 +1,4 @@
+//! Utilities for adding rows
 use crate::error::RowResult;
 use regex::{Captures, Regex};
 use std::str::FromStr;

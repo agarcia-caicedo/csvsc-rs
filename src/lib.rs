@@ -1,4 +1,4 @@
-mod add;
+pub mod add;
 mod add_with;
 mod error;
 mod flusher;
