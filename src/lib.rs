@@ -22,4 +22,5 @@ pub use row_stream::{get_field, RowStream};
 type Row = csv::StringRecord;
 
 const TARGET_FIELD: &'static str = "_target";
+// TODO delete this and make it dynamic
 const SOURCE_FIELD: &'static str = "_source";
