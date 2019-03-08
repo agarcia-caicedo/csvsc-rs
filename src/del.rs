@@ -1,10 +1,7 @@
 //! Utilities for deleting rows
 use crate::error::RowResult;
-use regex::{Captures, Regex};
-use std::str::FromStr;
-use strfmt::{strfmt_map, FmtError, Formatter};
 
-use super::{error::Error, get_field, Headers, Row, RowStream};
+use super::{Headers, Row, RowStream};
 
 /// Deletes the specified columns from each row.
 pub struct Del<'a, I> {
@@ -40,7 +37,6 @@ where
 pub struct IntoIter<'a, I> {
     iter: I,
     columns: Vec<&'a str>,
-    headers: Headers,
     old_headers: Headers,
 }
 
@@ -80,7 +76,6 @@ where
         Self::IntoIter {
             iter: self.iter.into_iter(),
             columns: self.columns,
-            headers: self.headers,
             old_headers: self.old_headers,
         }
     }
@@ -97,9 +92,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Del, Headers, Regex, Row, RowStream};
+    use super::{Del, Headers, Row, RowStream};
     use crate::mock::MockStream;
-    use crate::SOURCE_FIELD;
 
     #[test]
     fn test_del() {

@@ -1,7 +1,7 @@
 use super::{
     reducer::{AggregatedCol, ReducerBuildError},
     Add, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult, AddWith,
-    AdjacentReduce,
+    AdjacentReduce, Del,
     add::ColBuildError,
 };
 
@@ -20,6 +20,13 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         Add::new(self, columns)
+    }
+
+    fn del(self, columns: Vec<&str>) -> Del<Self>
+    where
+        Self: Sized,
+    {
+        Del::new(self, columns)
     }
 
     fn add_with<F>(self, colname: &str, f: F) -> AddWith<Self, F>
