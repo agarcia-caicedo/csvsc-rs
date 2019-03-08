@@ -26,7 +26,8 @@ impl Aggregate for Sum {
     fn update(&mut self, data: &str) -> Result<(), AggregateError> {
         match data.parse::<f64>() {
             Ok(num) => Ok(self.total += num),
-            Err(_) => Err(AggregateError::Parse),
+            // FIXME think seriously about this ones
+            Err(_) => Ok(()),
         }
     }
 

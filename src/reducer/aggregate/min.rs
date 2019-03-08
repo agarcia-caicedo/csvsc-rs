@@ -42,7 +42,8 @@ impl Aggregate for Min {
 
                 Ok(())
             }
-            Err(_) => Err(AggregateError::Parse),
+            // FIXME think seriously about this ones
+            Err(_) => Ok(()),
         }
     }
 
