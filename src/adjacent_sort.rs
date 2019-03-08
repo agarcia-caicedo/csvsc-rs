@@ -98,8 +98,7 @@ where
                 });
 
                 self.current_group = new_group.into_iter();
-
-                self.next()
+                self.current_group.next().map(|r| Ok(r))
             }
         }
     }
