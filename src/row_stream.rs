@@ -1,7 +1,8 @@
 use super::{
     reducer::{AggregatedCol, ReducerBuildError},
+    adjacent_sort::AdjacentSortBuildError,
     Add, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult, AddWith,
-    AdjacentReduce, Del,
+    AdjacentReduce, Del, AdjacentSort,
     add::ColBuildError,
 };
 
@@ -57,6 +58,17 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         AdjacentReduce::new(self, grouping, columns)
+    }
+
+    fn adjacent_sort(
+        self,
+        grouping: Vec<&str>,
+        sort_by: &str,
+    ) -> Result<AdjacentSort<Self>, AdjacentSortBuildError>
+    where
+        Self: Sized,
+    {
+        AdjacentSort::new(self, grouping, sort_by)
     }
 
     fn flush(self) -> Flusher<Self>
