@@ -8,6 +8,7 @@ mod inspect;
 mod reducer;
 mod adjacent_reduce;
 mod row_stream;
+mod del;
 
 pub mod mock;
 
@@ -21,6 +22,7 @@ pub use reducer::Reducer;
 pub use row_stream::{get_field, RowStream};
 pub use add_with::AddWith;
 pub use adjacent_reduce::AdjacentReduce;
+pub use del::Del;
 
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
