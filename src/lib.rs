@@ -1,3 +1,74 @@
+/*!
+
+`csvsc` es una biblioteca para construir procesadores de archivos csv.
+
+Imagina que tienes N archivos csv con la misma estructura y quieres producir
+con ellos otros M archivos csv cuya información depende de alguna manera de los
+archivos originales. Para eso es csvcv.
+
+# Modo de preparación
+
+Comienza un nuevo proyecto binario con cargo:
+
+```text
+$ cargo new --bin miprocesadordecsv
+```
+
+luego agrega `csvsc` y `encoding` como dependencia en `Cargo.toml`
+
+```toml
+[dependencies]
+csvsc = { git = "https://github.com/categulario/csvsc-rs.git" }
+encoding = "*"
+```
+
+y ahora construye tu cadena de procesamiento. En el siguiente ejemplo se
+construye una cadena de procesamiento con las siguientes características:
+
+1. toma como entrada los archivos `1.csv` y `2.csv` con codificación `UTF-8`,
+1. agrega una columna virtual `_target` que definirá el archivo de salida y que utiliza la columna `a` de los archivos de entrada en su definición,
+1. elimina la columna `b`.
+
+```rust
+use csvsc::ColSpec;
+use csvsc::InputStream;
+use csvsc::ReaderSource;
+use csvsc::RowStream;
+
+use encoding::all::UTF_8;
+
+fn main() {
+    let filenames = vec!["test/assets/1.csv", "test/assets/2.csv"];
+
+    let mut chain = InputStream::from_readers(
+            filenames
+                .iter()
+                .map(|f| ReaderSource::from_path(f).unwrap()),
+            UTF_8,
+        )
+        .add(vec![ColSpec::Mix {
+            colname: "_target".to_string(),
+            coldef: "output/{a}.csv".to_string(),
+        }])
+        .del(vec!["b"])
+        .flush()
+        .into_iter();
+
+    while let Some(item) = chain.next() {
+        if let Err(e) = item {
+            eprintln!("failed {:?}", e);
+        }
+    }
+}
+```
+
+Ejecutar este proyecto resultaría en una carpeta `output/` creada y dentro
+tantos archivos como diferentes valores haya en la columna `a`.
+
+Para saber qué métodos están disponibles en una cadena de procesamiento ve a la
+documentación de [RowStream](trait.RowStream.html).
+*/
+
 pub mod add;
 mod add_with;
 mod error;
