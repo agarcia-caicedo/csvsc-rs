@@ -12,10 +12,18 @@ pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r
 }
 
 /// This trait describes de behaviour of every component in the CSV transformation
-/// chain
+/// chain. Functions provided by this trait help construct the chain and can be
+/// _chained_.
+///
+/// Implement this trait to extend `csvsc` with your own processors.
 pub trait RowStream: IntoIterator<Item = RowResult> {
+
+    /// Must return headers as they are in this point of the chain. For example
+    /// if implementor adds a column, its `headers()` function must return the
+    /// new headers including the one just added.
     fn headers(&self) -> &Headers;
 
+    /// Allows adding columns to each row of the stream.
     fn add(self, columns: Vec<ColSpec>) -> Add<Self>
     where
         Self: Sized,
@@ -23,6 +31,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Add::new(self, columns)
     }
 
+    /// Deletes the specified columns from each row of the stream
     fn del(self, columns: Vec<&str>) -> Del<Self>
     where
         Self: Sized,
@@ -30,6 +39,8 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Del::new(self, columns)
     }
 
+    /// Adds a column to each row of the stream using a closure to compute its
+    /// value
     fn add_with<F>(self, colname: &str, f: F) -> AddWith<Self, F>
     where
         Self: Sized,
@@ -38,6 +49,8 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         AddWith::new(self, colname, f)
     }
 
+    /// Group by one or more columns, compute aggregates and output the
+    /// resulting columns
     fn reduce(
         self,
         grouping: Vec<&str>,
@@ -49,6 +62,8 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Reducer::new(self, grouping, columns)
     }
 
+    /// Group by one or more columns, but create an output row as soon as the
+    /// grouping key changes in the input stream.
     fn adjacent_reduce(
         self,
         grouping: Vec<&str>,
@@ -60,6 +75,9 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         AdjacentReduce::new(self, grouping, columns)
     }
 
+    /// Group by one or more columns and sort the rows by the given column.
+    /// Output a sorted group as soon as the grouping key changes in the input
+    /// stream.
     fn adjacent_sort(
         self,
         grouping: Vec<&str>,
@@ -71,6 +89,10 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         AdjacentSort::new(self, grouping, sort_by)
     }
 
+    // TODO allow customization of the output column, change docs accordingly
+    /// When consumed, writes to destination specified by the virtual field
+    /// _target. Other than that this behaves like an `id(x)` function so you can
+    /// specify more links in the chain and even more flushers.
     fn flush(self) -> Flusher<Self>
     where
         Self: Sized,
@@ -78,6 +100,8 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Flusher::new(self)
     }
 
+    /// Mostly for debugging, calls a closure on each element. Behaves like the
+    /// identity function on the stream returning each row untouched.
     fn inspect<F>(self, f: F) -> Inspect<Self, F>
     where
         Self: Sized,

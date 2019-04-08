@@ -4,7 +4,9 @@
 
 Imagina que tienes N archivos csv con la misma estructura y quieres producir
 con ellos otros M archivos csv cuya información depende de alguna manera de los
-archivos originales. Para eso es csvcv.
+archivos originales. Para eso es csvcv. Con esta herramienta puedes construir
+una cadena de procesamiento que va a modificar cada registro de los archivos de
+entrada y generar nuevos archivos de salida con esas modificaciones.
 
 # Modo de preparación
 
