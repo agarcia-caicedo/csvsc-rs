@@ -84,8 +84,7 @@ mod adjacent_reduce;
 mod row_stream;
 mod del;
 mod adjacent_sort;
-
-pub mod mock;
+mod mock;
 
 pub use add::{Add, ColSpec};
 pub use error::{Error, RowResult};
@@ -96,11 +95,12 @@ pub use inspect::Inspect;
 pub use reducer::Reducer;
 pub use row_stream::{get_field, RowStream};
 pub use add_with::AddWith;
-pub use adjacent_reduce::AdjacentReduce;
 pub use del::Del;
 // TODO rethink this whole adjacent thing... it might be a good idea to abstract
-// it into something better
+// it into something better that calls a closure with a vector of adjacent rows
+// for example, then implement stuff on top of that
 pub use adjacent_sort::AdjacentSort;
+pub use adjacent_reduce::AdjacentReduce;
 
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
