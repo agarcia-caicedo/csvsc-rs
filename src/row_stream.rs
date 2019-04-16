@@ -4,6 +4,8 @@ use super::{
     Add, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult, AddWith,
     AdjacentReduce, Del, AdjacentSort,
     add::ColBuildError,
+    flusher::FlushTarget,
+    error,
 };
 
 /// Helper function that retrieves a field from a row given it's header name
@@ -89,15 +91,15 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         AdjacentSort::new(self, grouping, sort_by)
     }
 
-    // TODO allow customization of the output column, change docs accordingly
-    /// When consumed, writes to destination specified by the virtual field
-    /// _target. Other than that this behaves like an `id(x)` function so you can
-    /// specify more links in the chain and even more flushers.
-    fn flush(self) -> Flusher<Self>
+    /// When consumed, writes to destination specified by the column given in
+    /// the first argument. Other than that this behaves like an `id(x)`
+    /// function so you can specify more links in the chain and even more
+    /// flushers.
+    fn flush(self, target: FlushTarget) -> error::Result<Flusher<Self>>
     where
         Self: Sized,
     {
-        Flusher::new(self)
+        Ok(Flusher::new(self, target)?)
     }
 
     /// Mostly for debugging, calls a closure on each element. Behaves like the

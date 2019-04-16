@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::result;
 
 use super::add::ColBuildError;
 use super::Row;
@@ -12,11 +13,14 @@ pub enum Error {
     InconsistentSizeOfRows(PathBuf),
     InconsistentHeaders(PathBuf),
     ColBuildError(ColBuildError),
+    ColumnNotFound(String),
 }
+
+pub type Result<T> = result::Result<T, Error>;
 
 /// The type that actually flows the transformation chain. Either a row or an
 /// error.
-pub type RowResult = Result<Row, Error>;
+pub type RowResult = result::Result<Row, Error>;
 
 impl From<csv::Error> for Error {
     fn from(error: csv::Error) -> Error {
@@ -31,6 +35,7 @@ impl std::error::Error for Error {
             Error::InconsistentSizeOfRows(_) => "inconsistent size of rows",
             Error::InconsistentHeaders(_) => "inconsistent headers among files",
             Error::ColBuildError(_) => "Error building a column",
+            Error::ColumnNotFound(_) => "Requested unexisten column",
         }
     }
 }
@@ -46,6 +51,7 @@ impl std::fmt::Display for Error {
                 write!(f, "inconsistent headers among files in {:?}", p)
             }
             Error::ColBuildError(ref c) => write!(f, "Could not build column with reason: {:?}", c),
+            Error::ColumnNotFound(ref c) => write!(f, "Requested column that was not found: {}", c),
         }
     }
 }

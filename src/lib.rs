@@ -36,6 +36,7 @@ use csvsc::ColSpec;
 use csvsc::InputStream;
 use csvsc::ReaderSource;
 use csvsc::RowStream;
+use csvsc::FlushTarget;
 
 use encoding::all::UTF_8;
 
@@ -53,7 +54,7 @@ fn main() {
             coldef: "output/{a}.csv".to_string(),
         }])
         .del(vec!["b"])
-        .flush()
+        .flush(FlushTarget::Column("_target".to_string())).unwrap()
         .into_iter();
 
     while let Some(item) = chain.next() {
@@ -71,7 +72,7 @@ Para saber qué métodos están disponibles en una cadena de procesamiento ve a 
 documentación de [RowStream](trait.RowStream.html).
 */
 
-pub mod add;
+mod add;
 mod add_with;
 mod error;
 mod flusher;
@@ -88,7 +89,7 @@ pub mod mock;
 
 pub use add::{Add, ColSpec};
 pub use error::{Error, RowResult};
-pub use flusher::Flusher;
+pub use flusher::{Flusher, FlushTarget};
 pub use headers::Headers;
 pub use input::{InputStream, ReaderSource};
 pub use inspect::Inspect;
@@ -105,5 +106,4 @@ pub use adjacent_sort::AdjacentSort;
 pub type Row = csv::StringRecord;
 
 // TODO delete this and make it dynamic
-const TARGET_FIELD: &'static str = "_target";
 const SOURCE_FIELD: &'static str = "_source";
