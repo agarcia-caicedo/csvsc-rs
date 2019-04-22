@@ -101,6 +101,7 @@ pub use del::Del;
 // for example, then implement stuff on top of that
 pub use adjacent_sort::AdjacentSort;
 pub use adjacent_reduce::AdjacentReduce;
+pub use mock::MockStream;
 
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
