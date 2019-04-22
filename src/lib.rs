@@ -86,7 +86,7 @@ mod del;
 mod adjacent_sort;
 mod mock;
 
-pub use add::{Add, ColSpec};
+pub use add::{Add, ColSpec, ColBuildError};
 pub use error::{Error, RowResult};
 pub use flusher::{Flusher, FlushTarget};
 pub use headers::Headers;
