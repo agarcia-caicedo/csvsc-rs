@@ -88,6 +88,7 @@ mod row_stream;
 mod del;
 mod adjacent_sort;
 mod mock;
+mod rename;
 
 pub use add::{Add, ColSpec, ColBuildError};
 pub use error::{Error, RowResult};
@@ -99,6 +100,7 @@ pub use reduce::Reduce;
 pub use row_stream::{get_field, RowStream};
 pub use add_with::AddWith;
 pub use del::Del;
+pub use rename::Rename;
 // TODO rethink this whole adjacent thing... it might be a good idea to abstract
 // it into something better that calls a closure with a vector of adjacent rows
 // for example, then implement stuff on top of that
