@@ -311,7 +311,7 @@ mod tests {
         )
         .unwrap();
 
-        let add= Add::new(
+        let add = Add::new(
             iter,
             vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
         );
@@ -321,7 +321,7 @@ mod tests {
             Headers::from_row(Row::from(vec!["id", "val", "path", "new"])),
         );
 
-        let mut add= add.into_iter();
+        let mut add = add.into_iter();
 
         assert_eq!(
             add.next().unwrap().unwrap(),

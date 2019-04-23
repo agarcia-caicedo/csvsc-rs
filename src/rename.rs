@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{Headers, RowStream, Row};
+use super::{Headers, RowStream, Row, RowResult};
 
 pub struct Rename<I> {
     iter: I,
@@ -27,5 +27,101 @@ where
             iter,
             headers: Headers::from_row(new_headers),
         }
+    }
+}
+
+pub struct IntoIter<I> {
+    iter: I,
+}
+
+impl<I> Iterator for IntoIter<I>
+where
+    I: Iterator<Item = RowResult>,
+{
+    type Item = RowResult;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+}
+
+impl<I> IntoIterator for Rename<I>
+where
+    I: RowStream,
+{
+    type Item = RowResult;
+
+    type IntoIter = IntoIter<I::IntoIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            iter: self.iter.into_iter(),
+        }
+    }
+}
+
+impl<I> RowStream for Rename<I>
+where
+    I: RowStream,
+{
+    fn headers(&self) -> &Headers {
+        &self.headers
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Rename;
+    use crate::{Row, Headers, RowStream};
+    use crate::mock::MockStream;
+
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_rename() {
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["id", "val"])),
+                Ok(Row::from(vec!["1", "40"])),
+                Ok(Row::from(vec!["2", "39"])),
+                Ok(Row::from(vec!["3", "38"])),
+                Ok(Row::from(vec!["4", "37"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
+
+        let mapping: HashMap<_, _> = vec![
+            ("val", "value"),
+        ].into_iter().collect();
+
+        let ren = Rename::new(
+            iter,
+            &mapping,
+        );
+
+        assert_eq!(
+            *ren.headers(),
+            Headers::from_row(Row::from(vec!["id", "value"])),
+        );
+
+        let mut ren = ren.into_iter();
+
+        assert_eq!(
+            ren.next().unwrap().unwrap(),
+            Row::from(vec!["1", "40"])
+        );
+        assert_eq!(
+            ren.next().unwrap().unwrap(),
+            Row::from(vec!["2", "39"])
+        );
+        assert_eq!(
+            ren.next().unwrap().unwrap(),
+            Row::from(vec!["3", "38"])
+        );
+        assert_eq!(
+            ren.next().unwrap().unwrap(),
+            Row::from(vec!["4", "37"])
+        );
     }
 }
