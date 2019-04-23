@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use super::{
     reduce::{AggregatedCol, ReduceBuildError},
     adjacent_sort::AdjacentSortBuildError,
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     AdjacentReduce, Del, AdjacentSort,
     add::ColBuildError,
+    Rename,
     flush::FlushTarget,
     error,
 };
@@ -110,6 +113,14 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         F: FnMut(&RowResult),
     {
         Inspect::new(self, f)
+    }
+
+    /// Renombra algunas columnas
+    fn rename(self, name_map: &HashMap<&str, &str>) -> Rename<Self>
+    where
+        Self: Sized,
+    {
+        Rename::new(self, name_map)
     }
 }
 
