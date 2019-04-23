@@ -12,7 +12,7 @@ use aggregate::Aggregate;
 use group::Group;
 
 #[derive(Debug)]
-pub enum ReducerBuildError {
+pub enum ReduceBuildError {
     GroupingKeyError(String),
     AggregateSourceError(String),
 }
@@ -117,14 +117,14 @@ impl FromStr for AggregatedCol {
 }
 
 /// Used to aggregate the rows, yielding the results as a new stream of rows.
-pub struct Reducer<I> {
+pub struct Reduce<I> {
     iter: I,
     group_by: Vec<String>,
     columns: Vec<AggregatedCol>,
     headers: Headers,
 }
 
-impl<I> Reducer<I>
+impl<I> Reduce<I>
 where
     I: RowStream,
 {
@@ -132,13 +132,13 @@ where
         iter: I,
         grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
-    ) -> Result<Reducer<I>, ReducerBuildError> {
+    ) -> Result<Reduce<I>, ReduceBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
-                return Err(ReducerBuildError::GroupingKeyError(key.to_string()));
+                return Err(ReduceBuildError::GroupingKeyError(key.to_string()));
             }
 
             group_by.push(key.to_string());
@@ -158,7 +158,7 @@ where
 
         for col in columns.iter() {
             if !headers.contains_key(col.source()) {
-                return Err(ReducerBuildError::AggregateSourceError(
+                return Err(ReduceBuildError::AggregateSourceError(
                     col.source().to_string(),
                 ));
             }
@@ -172,7 +172,7 @@ where
             whole_columns.push(column);
         }
 
-        Ok(Reducer {
+        Ok(Reduce {
             iter,
             group_by,
             columns: whole_columns,
@@ -197,7 +197,7 @@ impl Iterator for IntoIter {
     }
 }
 
-impl<I> IntoIterator for Reducer<I>
+impl<I> IntoIterator for Reduce<I>
 where
     I: RowStream,
 {
@@ -243,9 +243,9 @@ where
     }
 }
 
-impl<I> RowStream for Reducer<I>
+impl<I> RowStream for Reduce<I>
 where
-    Reducer<I>: IntoIterator<Item = RowResult>,
+    Reduce<I>: IntoIterator<Item = RowResult>,
 {
     fn headers(&self) -> &Headers {
         &self.headers
@@ -254,13 +254,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_row, Error, HashError, Headers, Reducer};
+    use super::{hash_row, Error, HashError, Headers, Reduce};
     use crate::add::ColBuildError;
     use crate::mock::MockStream;
     use crate::Row;
 
     #[test]
-    fn test_reducer_id_function() {
+    fn test_reduce_id_function() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["name", "_target"])),
@@ -272,7 +272,7 @@ mod tests {
         )
         .unwrap();
 
-        let re = Reducer::new(iter, Vec::new(), Vec::new()).unwrap();
+        let re = Reduce::new(iter, Vec::new(), Vec::new()).unwrap();
         let r = re.into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
@@ -290,7 +290,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_avg() {
+    fn test_reduce_avg() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -303,7 +303,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -321,7 +321,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_min() {
+    fn test_reduce_min() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -334,7 +334,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -352,7 +352,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_max() {
+    fn test_reduce_max() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -365,7 +365,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -383,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_sum() {
+    fn test_reduce_sum() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -396,7 +396,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -414,7 +414,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_error() {
+    fn test_reduce_error() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -428,7 +428,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut r = Reducer::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+        let mut r = Reduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 

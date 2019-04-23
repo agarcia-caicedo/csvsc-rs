@@ -75,11 +75,11 @@ documentación de [RowStream](trait.RowStream.html).
 mod add;
 mod add_with;
 mod error;
-mod flusher;
+mod flush;
 mod headers;
 mod input;
 mod inspect;
-mod reducer;
+mod reduce;
 mod adjacent_reduce;
 mod row_stream;
 mod del;
@@ -88,11 +88,11 @@ mod mock;
 
 pub use add::{Add, ColSpec, ColBuildError};
 pub use error::{Error, RowResult};
-pub use flusher::{Flusher, FlushTarget};
+pub use flush::{Flush, FlushTarget};
 pub use headers::Headers;
 pub use input::{InputStream, ReaderSource};
 pub use inspect::Inspect;
-pub use reducer::Reducer;
+pub use reduce::Reduce;
 pub use row_stream::{get_field, RowStream};
 pub use add_with::AddWith;
 pub use del::Del;
@@ -106,5 +106,9 @@ pub use mock::MockStream;
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
 
-// TODO delete this and make it dynamic
-const SOURCE_FIELD: &'static str = "_source";
+/// Una columna con este nombre será añadida a cada registro. Dicha columna
+/// tiene por valor la ruta absoluta al archivo de entrada y sirve para extraer
+/// información que pueda estar contenida por ejemplo en el nombre del archivo.
+///
+/// Es útil en combinación con el procesador [Add](struct.Add.html).
+pub const SOURCE_FIELD: &'static str = "_source";

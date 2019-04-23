@@ -40,24 +40,24 @@ pub enum FlushTarget {
 /// Flushes the rows to the destination specified by a column.
 ///
 /// Fields starting with underscore are not written.
-pub struct Flusher<I> {
+pub struct Flush<I> {
     iter: I,
     target: FlushTarget,
 }
 
-impl<I> Flusher<I>
+impl<I> Flush<I>
 where
     I: RowStream,
 {
-    pub fn new(iter: I, target: FlushTarget) -> Result<Flusher<I>> {
+    pub fn new(iter: I, target: FlushTarget) -> Result<Flush<I>> {
         if let FlushTarget::Column(s) = target {
             if !iter.headers().contains_key(&s) {
                 return Err(Error::ColumnNotFound(s));
             }
 
-            Ok(Flusher { iter, target: FlushTarget::Column(s) })
+            Ok(Flush { iter, target: FlushTarget::Column(s) })
         } else {
-            Ok(Flusher { iter, target })
+            Ok(Flush { iter, target })
         }
     }
 }
@@ -77,7 +77,7 @@ impl<I> IntoIter<I> {
         match self.target {
             FlushTarget::Column(ref colname) => {
                 // can unwrap because we checked the existence of the field
-                // while building the Flusher
+                // while building the Flush
                 let target = PathBuf::from(get_field(&self.headers, row, &colname).unwrap());
 
                 if self.targets.contains_key(&target) {
@@ -143,7 +143,7 @@ where
     }
 }
 
-impl<I> IntoIterator for Flusher<I>
+impl<I> IntoIterator for Flush<I>
 where
     I: RowStream,
 {

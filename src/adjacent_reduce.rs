@@ -1,7 +1,7 @@
 use super::{Error, Headers, Row, RowResult, RowStream};
 use std::rc::Rc;
-use crate::reducer::{
-    aggregate, group::Group, ReducerBuildError, AggregatedCol, hash_row
+use crate::reduce::{
+    aggregate, group::Group, ReduceBuildError, AggregatedCol, hash_row
 };
 
 /// This reducer assumes that the grouping criteria will match contiguous groups
@@ -25,13 +25,13 @@ where
         iter: I,
         grouping: Vec<&str>,
         aggregates: Vec<AggregatedCol>,
-    ) -> Result<AdjacentReduce<I>, ReducerBuildError> {
+    ) -> Result<AdjacentReduce<I>, ReduceBuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
-                return Err(ReducerBuildError::GroupingKeyError(key.to_string()));
+                return Err(ReduceBuildError::GroupingKeyError(key.to_string()));
             }
 
             group_by.push(key.to_string());
@@ -51,7 +51,7 @@ where
 
         for col in aggregates.iter() {
             if !headers.contains_key(col.source()) {
-                return Err(ReducerBuildError::AggregateSourceError(
+                return Err(ReduceBuildError::AggregateSourceError(
                     col.source().to_string(),
                 ));
             }
@@ -211,7 +211,7 @@ mod tests {
     use crate::add::ColBuildError;
 
     #[test]
-    fn test_reducer_id_function() {
+    fn test_reduce_id_function() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["name", "_target"])),
@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_avg() {
+    fn test_reduce_avg() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_min() {
+    fn test_reduce_min() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -301,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_max() {
+    fn test_reduce_max() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_sum() {
+    fn test_reduce_sum() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reducer_errors() {
+    fn test_reduce_errors() {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),

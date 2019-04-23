@@ -1,6 +1,6 @@
 use std::iter::Peekable;
 use super::{Row, RowResult, RowStream, Headers, get_field};
-use super::reducer::hash_row;
+use super::reduce::hash_row;
 
 #[derive(Debug)]
 pub enum AdjacentSortBuildError {

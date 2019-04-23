@@ -1,10 +1,10 @@
 use super::{
-    reducer::{AggregatedCol, ReducerBuildError},
+    reduce::{AggregatedCol, ReduceBuildError},
     adjacent_sort::AdjacentSortBuildError,
-    Add, ColSpec, Flusher, Headers, Inspect, Reducer, Row, RowResult, AddWith,
+    Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     AdjacentReduce, Del, AdjacentSort,
     add::ColBuildError,
-    flusher::FlushTarget,
+    flush::FlushTarget,
     error,
 };
 
@@ -57,11 +57,11 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         self,
         grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
-    ) -> Result<Reducer<Self>, ReducerBuildError>
+    ) -> Result<Reduce<Self>, ReduceBuildError>
     where
         Self: Sized,
     {
-        Reducer::new(self, grouping, columns)
+        Reduce::new(self, grouping, columns)
     }
 
     /// Group by one or more columns, but create an output row as soon as the
@@ -70,7 +70,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         self,
         grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
-    ) -> Result<AdjacentReduce<Self>, ReducerBuildError>
+    ) -> Result<AdjacentReduce<Self>, ReduceBuildError>
     where
         Self: Sized,
     {
@@ -95,11 +95,11 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     /// the first argument. Other than that this behaves like an `id(x)`
     /// function so you can specify more links in the chain and even more
     /// flushers.
-    fn flush(self, target: FlushTarget) -> error::Result<Flusher<Self>>
+    fn flush(self, target: FlushTarget) -> error::Result<Flush<Self>>
     where
         Self: Sized,
     {
-        Ok(Flusher::new(self, target)?)
+        Ok(Flush::new(self, target)?)
     }
 
     /// Mostly for debugging, calls a closure on each element. Behaves like the
