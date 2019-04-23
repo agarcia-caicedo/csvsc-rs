@@ -6,6 +6,8 @@ use strfmt::{strfmt_map, FmtError, Formatter};
 
 use super::{error::Error, get_field, Headers, Row, RowStream};
 
+/// Clases de errores que pueden pasar al interpretar la especificación de
+/// cómo construir una nueva columna.
 #[derive(Debug)]
 pub enum ColSpecParseError {
     MissingSource,
@@ -16,6 +18,8 @@ pub enum ColSpecParseError {
     InvalidSpec,
 }
 
+/// Clases de errores que se pueden generar al construir una columna para
+/// agregar a cada registro.
 #[derive(Debug)]
 pub enum ColBuildError {
     UnknownSource,
@@ -33,10 +37,10 @@ fn interpolate(template: &str, captures: &Captures) -> String {
     res
 }
 
-/// Represents a spec for building a new column.
+/// Tipos de especificaciones disponibles para crear una nueva columna.
 pub enum ColSpec {
-    /// Builds a new column based on a previous one, taking information from
-    /// a regular expression.
+    /// Construye una nueva columna basándose en una columna anterior, usando
+    /// una expresión regular para extraer información de la misma.
     Regex {
         source: String,
         colname: String,
@@ -44,7 +48,18 @@ pub enum ColSpec {
         regex: Regex,
     },
 
-    /// Adds a new column based on a mix template of existing ones
+    /// Crea una nueva columna mezclando columnas existentes mediante el uso de
+    /// una plantilla
+    ///
+    /// E.g. suponiendo que existen las columnas `month` y `day`:
+    ///
+    /// ```rust
+    /// use csvsc::ColSpec;
+    ///
+    /// let spec = ColSpec::Mix {
+    ///     colname: "new_col".to_string(),
+    ///     coldef: "{day}/{month}".to_string(),
+    /// };
     Mix { colname: String, coldef: String },
 }
 

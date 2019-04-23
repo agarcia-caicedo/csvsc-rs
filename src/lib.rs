@@ -70,6 +70,9 @@ tantos archivos como diferentes valores haya en la columna `a`.
 
 Para saber qué métodos están disponibles en una cadena de procesamiento ve a la
 documentación de [RowStream](trait.RowStream.html).
+
+Las columnas cuyos nombres comienzen con guión bajo no serán escritas en los
+archivos de salida.
 */
 
 mod add;
