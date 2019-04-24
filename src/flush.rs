@@ -1,10 +1,10 @@
-use super::{get_field, Error, Headers, Row, RowResult, RowStream};
+use crate::{get_field, Error, Headers, Row, RowResult, RowStream};
 use csv::Writer;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::result;
-use super::error::Result;
+use crate::error::Result;
 
 fn trim_underscores(headers: &Headers, row: &Row) -> Row {
     // FIXME bad estimate here of row size

@@ -7,9 +7,9 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use super::Headers;
-use super::RowStream;
-use super::{Row, SOURCE_FIELD};
+use crate::Headers;
+use crate::RowStream;
+use crate::{Row, SOURCE_FIELD};
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     let mut row = Row::with_capacity(data.as_slice().len(), data.len());

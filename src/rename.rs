@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{Headers, RowStream, Row, RowResult};
+use crate::{Headers, RowStream, Row, RowResult};
 
 pub struct Rename<I> {
     iter: I,

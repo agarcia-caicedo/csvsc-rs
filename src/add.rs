@@ -4,7 +4,7 @@ use regex::{Captures, Regex};
 use std::str::FromStr;
 use strfmt::{strfmt_map, FmtError, Formatter};
 
-use super::{error::Error, get_field, Headers, Row, RowStream};
+use crate::{error::Error, get_field, Headers, Row, RowStream};
 
 /// Clases de errores que pueden pasar al interpretar la especificación de
 /// cómo construir una nueva columna.

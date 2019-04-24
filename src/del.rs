@@ -1,7 +1,7 @@
 //! Utilities for deleting rows
 use crate::error::RowResult;
 
-use super::{Headers, Row, RowStream};
+use crate::{Headers, Row, RowStream};
 
 /// Deletes the specified columns from each row.
 pub struct Del<'a, I> {

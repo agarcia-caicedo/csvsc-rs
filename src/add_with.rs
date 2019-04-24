@@ -1,5 +1,5 @@
 use crate::error::RowResult;
-use super::{error::Error, Headers, RowStream, Row};
+use crate::{error::Error, Headers, RowStream, Row};
 use crate::add::ColBuildError;
 
 /// Adds a column to each register using a closure to generate its data.

@@ -2,7 +2,7 @@ use csv::StringRecordIter;
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 
-use super::Row;
+use crate::Row;
 
 /// A structure for keeping relationship between the headers and their positions
 #[derive(Debug, Clone, PartialEq)]

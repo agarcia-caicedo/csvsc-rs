@@ -1,4 +1,4 @@
-use super::{Error, Headers, Row, RowResult, RowStream};
+use crate::{Error, Headers, Row, RowResult, RowStream};
 use std::rc::Rc;
 use crate::reduce::{
     aggregate, group::Group, ReduceBuildError, AggregatedCol, hash_row

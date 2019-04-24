@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{
+use crate::{
     reduce::{AggregatedCol, ReduceBuildError},
     adjacent_sort::AdjacentSortBuildError,
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,

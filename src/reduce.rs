@@ -1,4 +1,4 @@
-use super::{get_field, Error, Headers, Row, RowResult, RowStream};
+use crate::{get_field, Error, Headers, Row, RowResult, RowStream};
 use std::collections::hash_map::{self, DefaultHasher};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
