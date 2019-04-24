@@ -77,36 +77,38 @@ archivos de salida.
 
 mod add;
 mod add_with;
+mod adjacent_group;
+mod adjacent_reduce;
+mod adjacent_sort;
+mod del;
 mod error;
 mod flush;
 mod headers;
 mod input;
 mod inspect;
-mod reduce;
-mod adjacent_reduce;
-mod row_stream;
-mod del;
-mod adjacent_sort;
 mod mock;
+mod reduce;
 mod rename;
+mod row_stream;
 
 pub use add::{Add, ColSpec, ColBuildError};
+pub use add_with::AddWith;
+// TODO rethink this whole adjacent thing... it might be a good idea to abstract
+// it into something better that calls a closure with a vector of adjacent rows
+// for example, then implement stuff on top of that
+pub use adjacent_group::AdjacentGroup;
+pub use adjacent_reduce::AdjacentReduce;
+pub use adjacent_sort::AdjacentSort;
+pub use del::Del;
 pub use error::{Error, RowResult};
 pub use flush::{Flush, FlushTarget};
 pub use headers::Headers;
 pub use input::{InputStream, ReaderSource};
 pub use inspect::Inspect;
-pub use reduce::Reduce;
-pub use row_stream::{get_field, RowStream};
-pub use add_with::AddWith;
-pub use del::Del;
-pub use rename::Rename;
-// TODO rethink this whole adjacent thing... it might be a good idea to abstract
-// it into something better that calls a closure with a vector of adjacent rows
-// for example, then implement stuff on top of that
-pub use adjacent_sort::AdjacentSort;
-pub use adjacent_reduce::AdjacentReduce;
 pub use mock::MockStream;
+pub use reduce::Reduce;
+pub use rename::Rename;
+pub use row_stream::{get_field, RowStream};
 
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
