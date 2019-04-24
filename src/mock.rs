@@ -16,16 +16,16 @@ impl<I> MockStream<I>
 where
     I: Iterator<Item = RowResult>,
 {
-    fn new(iter: I, headers: Row) -> MockStream<I> {
+    pub fn new(iter: I, headers: Headers) -> MockStream<I> {
         MockStream {
             iter,
-            headers: Headers::from_row(headers),
+            headers: headers,
         }
     }
 
     pub fn from_rows(mut iter: I) -> Result<MockStream<I>, BuildError> {
         match iter.next() {
-            Some(Ok(row)) => Ok(MockStream::new(iter, row)),
+            Some(Ok(row)) => Ok(MockStream::new(iter, Headers::from_row(row))),
             Some(Err(_)) => Err(BuildError::FailedHeader),
             None => Err(BuildError::EmptyIterator),
         }

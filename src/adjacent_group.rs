@@ -84,6 +84,7 @@ mod tests {
     use crate::{
         Headers,
         Row, RowStream,
+        get_field,
         mock::MockStream
     };
     use super::AdjacentGroup;
@@ -104,11 +105,23 @@ mod tests {
         )
         .unwrap();
 
-        let re = AdjacentGroup::new(iter, |iter| {
-            assert!(false, "compute sum of elements in iter");
-            assert!(false, "add column based on the sum");
+        let re = AdjacentGroup::new(iter, |row_stream| {
+            let headers = row_stream.headers().clone();
+            let rows: Vec<_> = row_stream.into_iter().collect();
+            let mut sum = 0.0;
 
-            iter
+            for row in rows.iter() {
+                let value: f64 = get_field(
+                    &headers,
+                    &row.as_ref().unwrap(),
+                    "value"
+                ).unwrap().parse().unwrap();
+
+                sum += value;
+            }
+
+            MockStream::new(rows.into_iter(), headers)
+                .add(vec![format!("value:sum:{}", sum).parse().unwrap()])
         });
 
         assert_eq!(
