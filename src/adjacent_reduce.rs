@@ -1,7 +1,10 @@
-use crate::{Error, Headers, Row, RowResult, RowStream};
 use std::rc::Rc;
-use crate::reduce::{
-    aggregate, group::Group, ReduceBuildError, AggregatedCol, hash_row
+use crate::{
+    Error, Headers, Row, RowResult, RowStream,
+    reduce::{
+        aggregate, ReduceBuildError, AggregatedCol, hash_row,
+        group::Group,
+    },
 };
 
 /// This reducer assumes that the grouping criteria will match contiguous groups
@@ -205,10 +208,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::AdjacentReduce;
-    use crate::mock::MockStream;
-    use crate::Row;
-    use crate::error::Error;
-    use crate::add::ColBuildError;
+    use crate::{
+        Row,
+        mock::MockStream,
+        error::Error,
+        add::ColBuildError,
+    };
 
     #[test]
     fn test_reduce_id_function() {

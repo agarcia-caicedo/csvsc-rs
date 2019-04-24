@@ -1,10 +1,12 @@
 //! Utilities for adding rows
-use crate::error::RowResult;
 use regex::{Captures, Regex};
 use std::str::FromStr;
 use strfmt::{strfmt_map, FmtError, Formatter};
 
-use crate::{error::Error, get_field, Headers, Row, RowStream};
+use crate::{
+    get_field, Headers, Row, RowStream,
+    error::{Error, RowResult},
+};
 
 /// Clases de errores que pueden pasar al interpretar la especificación de
 /// cómo construir una nueva columna.
@@ -256,8 +258,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{interpolate, Add, ColSpec, Headers, Regex, Row, RowStream};
-    use crate::mock::MockStream;
-    use crate::SOURCE_FIELD;
+    use crate::{SOURCE_FIELD, mock::MockStream};
 
     #[test]
     fn test_colspec_simplest() {

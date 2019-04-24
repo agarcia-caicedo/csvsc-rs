@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 use std::result;
 
-use crate::add::ColBuildError;
-use crate::Row;
+use crate::{Row, add::ColBuildError};
 
 /// An error found somewhere in the transformation chain.
 #[derive(Debug)]

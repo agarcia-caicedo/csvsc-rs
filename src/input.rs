@@ -1,4 +1,3 @@
-use crate::error::{Error, RowResult};
 use csv::Reader;
 use csv::{ByteRecord, ByteRecordsIntoIter};
 use encoding::{DecoderTrap, EncodingRef};
@@ -7,9 +6,10 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use crate::Headers;
-use crate::RowStream;
-use crate::{Row, SOURCE_FIELD};
+use crate::{
+    Row, SOURCE_FIELD, Headers, RowStream,
+    error::{Error, RowResult},
+};
 
 fn decode(data: ByteRecord, encoding: EncodingRef) -> Row {
     let mut row = Row::with_capacity(data.as_slice().len(), data.len());

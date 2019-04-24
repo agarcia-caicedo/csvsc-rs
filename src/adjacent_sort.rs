@@ -1,6 +1,8 @@
 use std::iter::Peekable;
-use crate::{Row, RowResult, RowStream, Headers, get_field};
-use crate::reduce::hash_row;
+use crate::{
+    Row, RowResult, RowStream, Headers, get_field,
+    reduce::hash_row,
+};
 
 #[derive(Debug)]
 pub enum AdjacentSortBuildError {

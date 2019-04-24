@@ -1,6 +1,8 @@
-use crate::error::RowResult;
-use crate::{error::Error, Headers, RowStream, Row};
-use crate::add::ColBuildError;
+use crate::{
+    Headers, RowStream, Row,
+    add::ColBuildError,
+    error::{Error, RowResult},
+};
 
 /// Adds a column to each register using a closure to generate its data.
 ///
@@ -87,8 +89,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{AddWith, Headers, Row, RowStream};
-    use crate::mock::MockStream;
-    use crate::get_field;
+    use crate::{get_field, mock::MockStream};
 
     #[test]
     fn test_add() {

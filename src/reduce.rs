@@ -255,9 +255,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{hash_row, Error, HashError, Headers, Reduce};
-    use crate::add::ColBuildError;
-    use crate::mock::MockStream;
-    use crate::Row;
+    use crate::{Row, add::ColBuildError, mock::MockStream};
 
     #[test]
     fn test_reduce_id_function() {

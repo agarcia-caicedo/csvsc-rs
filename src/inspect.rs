@@ -1,6 +1,4 @@
-use crate::error::RowResult;
-
-use crate::{Headers, RowStream};
+use crate::{Headers, RowStream, error::RowResult};
 
 /// Allows calling a closure on each row, just like in rust's Iterator trait.
 pub struct Inspect<I, F> {

@@ -72,8 +72,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::Rename;
-    use crate::{Row, Headers, RowStream};
-    use crate::mock::MockStream;
+    use crate::{Row, Headers, RowStream, mock::MockStream};
 
     use std::collections::HashMap;
 
