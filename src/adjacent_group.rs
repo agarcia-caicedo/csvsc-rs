@@ -1,4 +1,8 @@
-use crate::{RowStream, Headers, RowResult};
+use std::vec;
+use crate::{
+    RowStream, Headers, RowResult,
+    mock::MockStream,
+};
 
 pub struct AdjacentGroup<I, F> {
     iter: I,
@@ -6,10 +10,11 @@ pub struct AdjacentGroup<I, F> {
     headers: Headers,
 }
 
-impl<I, F> AdjacentGroup<I, F>
+impl<I, F, R> AdjacentGroup<I, F>
 where
     I: RowStream,
-    F: FnMut(Vec<RowResult>) -> Vec<RowResult>,
+    F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+    R: RowStream,
 {
     pub fn new(
         iter: I,
@@ -31,10 +36,11 @@ pub struct IntoIter<I, F> {
     headers: Headers,
 }
 
-impl<I, F> Iterator for IntoIter<I, F>
+impl<I, F, R> Iterator for IntoIter<I, F>
 where
     I: Iterator<Item = RowResult>,
-    F: FnMut(Vec<RowResult>) -> Vec<RowResult>,
+    F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+    R: RowStream,
 {
     type Item = RowResult;
 
@@ -43,10 +49,11 @@ where
     }
 }
 
-impl<I, F> IntoIterator for AdjacentGroup<I, F>
+impl<I, F, R> IntoIterator for AdjacentGroup<I, F>
 where
     I: RowStream,
-    F: FnMut(Vec<RowResult>) -> Vec<RowResult>,
+    F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+    R: RowStream,
 {
     type Item = RowResult;
 
@@ -61,10 +68,11 @@ where
     }
 }
 
-impl<I, F> RowStream for AdjacentGroup<I, F>
+impl<I, F, R> RowStream for AdjacentGroup<I, F>
 where
     I: RowStream,
-    F: FnMut(Vec<RowResult>) -> Vec<RowResult>,
+    F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+    R: RowStream,
 {
     fn headers(&self) -> &Headers {
         &self.headers
@@ -74,6 +82,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
+        Headers,
         Row, RowStream,
         mock::MockStream
     };
@@ -99,8 +108,14 @@ mod tests {
             assert!(false, "compute sum of elements in iter");
             assert!(false, "add column based on the sum");
 
-            unimplemented!()
+            iter
         });
+
+        assert_eq!(
+            *re.headers(),
+            Headers::from_row(Row::from(vec!["name", "value", "sum"])),
+        );
+
         let r = re.into_iter();
 
         let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
