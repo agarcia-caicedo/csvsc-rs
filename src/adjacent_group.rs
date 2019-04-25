@@ -16,6 +16,7 @@ pub struct AdjacentGroup<I, F> {
     iter: I,
     f: F,
     headers: Headers,
+    old_headers: Headers,
     group_by: Vec<String>,
 }
 
@@ -35,7 +36,8 @@ where
         H: FnMut(Headers) -> Headers,
     {
         let mut group_by = Vec::with_capacity(grouping.len());
-        let headers = iter.headers().clone();
+        let old_headers = iter.headers().clone();
+        let headers = old_headers.clone();
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
@@ -51,6 +53,7 @@ where
             iter,
             f,
             headers,
+            old_headers,
             group_by,
         })
     }
@@ -65,6 +68,7 @@ where
     iter: Peekable<I>,
     f: F,
     headers: Headers,
+    old_headers: Headers,
     current_group: Option<R::IntoIter>,
     group_by: Vec<String>,
 }
@@ -126,7 +130,7 @@ where
                     }
 
                     self.current_group = Some((self.f)(
-                        MockStream::new(current_group.into_iter(), self.headers.clone())
+                        MockStream::new(current_group.into_iter(), self.old_headers.clone())
                     ).into_iter());
 
                     self.next()
@@ -152,6 +156,7 @@ where
             iter: self.iter.into_iter().peekable(),
             f: self.f,
             headers: self.headers,
+            old_headers: self.old_headers,
             group_by: self.group_by,
             current_group: None,
         }
