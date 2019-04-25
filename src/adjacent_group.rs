@@ -4,6 +4,7 @@ use crate::{
     RowStream, Headers, RowResult,
     mock::MockStream,
     reduce::hash_row,
+    error::Error,
 };
 
 #[derive(Debug)]
@@ -129,9 +130,15 @@ where
                         }
                     }
 
-                    self.current_group = Some((self.f)(
+                    let output_stream = (self.f)(
                         MockStream::new(current_group.into_iter(), self.old_headers.clone())
-                    ).into_iter());
+                    );
+
+                    if *output_stream.headers() != self.headers {
+                        return Some(Err(Error::InconsistentHeaders));
+                    }
+
+                    self.current_group = Some(output_stream.into_iter());
 
                     self.next()
                 },
