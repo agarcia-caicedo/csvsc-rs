@@ -1,4 +1,5 @@
 use std::vec;
+use std::iter::Peekable;
 use crate::{
     RowStream, Headers, RowResult,
     mock::MockStream,
@@ -34,10 +35,14 @@ where
     }
 }
 
-pub struct IntoIter<I, F> {
-    iter: I,
+pub struct IntoIter<I, F>
+where
+    I: Iterator<Item=RowResult>,
+{
+    iter: Peekable<I>,
     f: F,
     headers: Headers,
+    current_group: Option<I>,
 }
 
 impl<I, F, R> Iterator for IntoIter<I, F>
@@ -49,7 +54,37 @@ where
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        // * I have an already processed group
+        //   - Next item of group is some
+        //      + return it
+        //   - Next item of group is None
+        //      + dispose group
+        //      + recursive call
+        // * There is no group
+        //   - Next item is None
+        //      + return None
+        //   - Next item is Some
+        //      + build a group
+        //      + store it
+        //      + recursive call
+        match self.current_group.as_mut() {
+            Some(group) => match group.next() {
+                Some(item) => Some(item),
+                None => {
+                    self.current_group = None;
+
+                    self.next()
+                },
+            },
+            None => match self.iter.peek() {
+                None => None,
+                Some(_) => {
+                    unimplemented!();
+
+                    self.next()
+                },
+            },
+        }
     }
 }
 
@@ -65,9 +100,10 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter {
-            iter: self.iter.into_iter(),
+            iter: self.iter.into_iter().peekable(),
             f: self.f,
             headers: self.headers,
+            current_group: None,
         }
     }
 }
