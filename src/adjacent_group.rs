@@ -110,7 +110,7 @@ mod tests {
         .unwrap();
 
         let re = AdjacentGroup::new(iter, |mut headers| {
-            headers.add("value");
+            headers.add("sum");
 
             headers
         }, |row_stream| {
