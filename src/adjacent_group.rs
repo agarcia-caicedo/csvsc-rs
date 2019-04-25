@@ -56,18 +56,20 @@ where
     }
 }
 
-pub struct IntoIter<I, F>
+pub struct IntoIter<I, F, R>
 where
     I: Iterator<Item=RowResult>,
+    F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+    R: RowStream,
 {
     iter: Peekable<I>,
     f: F,
     headers: Headers,
-    current_group: Option<I>,
+    current_group: Option<R::IntoIter>,
     group_by: Vec<String>,
 }
 
-impl<I, F, R> Iterator for IntoIter<I, F>
+impl<I, F, R> Iterator for IntoIter<I, F, R>
 where
     I: Iterator<Item = RowResult>,
     F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
@@ -85,8 +87,12 @@ where
         // * There is no group
         //   - Next item is None
         //      + return None
-        //   - Next item is Some
+        //   - Next item is Some(Ok())
         //      + build a group
+        //      + store it
+        //      + recursive call
+        //   - Next item is Some(Err())
+        //      + build an error group
         //      + store it
         //      + recursive call
         match self.current_group.as_mut() {
@@ -103,7 +109,25 @@ where
                 Some(Ok(_)) => {
                     let first_row = self.iter.next().unwrap().unwrap();
                     let current_hash = hash_row(&self.headers, &first_row, &self.group_by).unwrap();
-                    let current_group = vec![first_row];
+                    let mut current_group = vec![Ok(first_row)];
+
+                    loop {
+                        if let Some(Ok(next_row)) = self.iter.peek() {
+                            let next_hash = hash_row(&self.headers, next_row, &self.group_by).unwrap();
+
+                            if next_hash == current_hash {
+                                current_group.push(self.iter.next().unwrap());
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+
+                    self.current_group = Some((self.f)(
+                        MockStream::new(current_group.into_iter(), self.headers.clone())
+                    ).into_iter());
 
                     self.next()
                 },
@@ -121,7 +145,7 @@ where
 {
     type Item = RowResult;
 
-    type IntoIter = IntoIter<I::IntoIter, F>;
+    type IntoIter = IntoIter<I::IntoIter, F, R>;
 
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter {
