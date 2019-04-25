@@ -1,15 +1,18 @@
-use std::collections::HashMap;
+use std::{
+    vec,
+    collections::HashMap,
+};
 
 use crate::{
     reduce::{AggregatedCol, ReduceBuildError},
     adjacent_sort::AdjacentSortBuildError,
-    Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
-    AdjacentReduce, Del, AdjacentSort,
+    adjacent_group::AdjacentGroupBuildError,
     add::{ColBuildError, AddBuildError},
     add_with::AddWithBuildError,
-    Rename,
-    flush::FlushTarget,
+    Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
+    AdjacentReduce, Del, AdjacentSort, AdjacentGroup, MockStream, Rename,
     error,
+    flush::FlushTarget,
 };
 
 /// Helper function that retrieves a field from a row given it's header name
@@ -66,6 +69,21 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         Reduce::new(self, grouping, columns)
+    }
+
+    fn adjacent_group<H, F, R>(
+        self,
+        header_map: H,
+        f: F,
+        grouping: &[&str],
+    ) -> Result<AdjacentGroup<Self, F>, AdjacentGroupBuildError>
+    where
+        H: FnMut(Headers) -> Headers,
+        F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+        R: RowStream,
+        Self: Sized,
+    {
+        AdjacentGroup::new(self, header_map, f, grouping)
     }
 
     /// Group by one or more columns, but create an output row as soon as the
