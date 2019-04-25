@@ -180,7 +180,8 @@ mod tests {
         Headers,
         Row, RowStream,
         get_field,
-        mock::MockStream
+        mock::MockStream,
+        error::Error,
     };
     use super::AdjacentGroup;
 
@@ -248,7 +249,37 @@ mod tests {
 
     #[test]
     fn test_nonmatching_headers() {
-        unimplemented!()
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["name", "value"])),
+                Ok(Row::from(vec!["a", "1"])),
+                Ok(Row::from(vec!["a", "2"])),
+                Ok(Row::from(vec!["a", "3"])),
+                Ok(Row::from(vec!["b", "1"])),
+                Ok(Row::from(vec!["b", "1"])),
+                Ok(Row::from(vec!["b", "1"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
+
+        let re = AdjacentGroup::new(iter, |headers| headers, |row_stream| {
+            row_stream
+                .add(vec!["value:sum:2".parse().unwrap()])
+                .unwrap()
+        }, &["name"]).unwrap();
+
+        assert_eq!(
+            *re.headers(),
+            Headers::from_row(Row::from(vec!["name", "value"])),
+        );
+
+        let mut r = re.into_iter();
+
+        match r.next() {
+            Some(Err(Error::InconsistentHeaders)) => {},
+            _ => unreachable!(),
+        }
     }
 
     #[test]

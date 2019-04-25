@@ -127,7 +127,7 @@ impl Iterator for InputStream {
                     let new_headers = decode(rs.headers(), self.encoding);
 
                     if new_headers != self.headers {
-                        return Some(Err(Error::InconsistentHeaders(PathBuf::from(rs.path))));
+                        return Some(Err(Error::InconsistentHeaders));
                     }
 
                     self.current_records = rs.reader.into_byte_records();
@@ -147,9 +147,6 @@ mod tests {
     use super::{InputStream, ReaderSource, Row, SOURCE_FIELD};
     use crate::error::Error;
     use encoding::all::{UTF_8, WINDOWS_1252};
-
-    use std::path::PathBuf;
-    use std::str::FromStr;
 
     #[test]
     fn test_read_concatenated() {
@@ -216,11 +213,7 @@ mod tests {
         );
 
         match input_stream.skip(2).next() {
-            Some(Err(Error::InconsistentHeaders(ref p)))
-                if *p == PathBuf::from_str("test/assets/3.csv").unwrap() =>
-            {
-                ()
-            }
+            Some(Err(Error::InconsistentHeaders)) => { () }
 
             x => unreachable!("{:?}", x),
         }

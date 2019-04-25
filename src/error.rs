@@ -9,8 +9,8 @@ pub enum Error {
     // TODO remove the Csv variant and derive partialeq, eq and hash. This will
     // allow for errors to be grouped and streamed in groups
     Csv(csv::Error),
+    InconsistentHeaders,
     InconsistentSizeOfRows(PathBuf),
-    InconsistentHeaders(PathBuf),
     ColBuildError(ColBuildError),
     ColumnNotFound(String),
 }
@@ -32,7 +32,7 @@ impl std::error::Error for Error {
         match *self {
             Error::Csv(_) => "CSV error",
             Error::InconsistentSizeOfRows(_) => "inconsistent size of rows",
-            Error::InconsistentHeaders(_) => "inconsistent headers among files",
+            Error::InconsistentHeaders => "inconsistent headers among files",
             Error::ColBuildError(_) => "Error building a column",
             Error::ColumnNotFound(_) => "Requested unexisten column",
         }
@@ -46,8 +46,8 @@ impl std::fmt::Display for Error {
             Error::InconsistentSizeOfRows(ref p) => {
                 write!(f, "inconsistent size of rows in {:?}", p)
             }
-            Error::InconsistentHeaders(ref p) => {
-                write!(f, "inconsistent headers among files in {:?}", p)
+            Error::InconsistentHeaders => {
+                write!(f, "inconsistent headers")
             }
             Error::ColBuildError(ref c) => write!(f, "Could not build column with reason: {:?}", c),
             Error::ColumnNotFound(ref c) => write!(f, "Requested column that was not found: {}", c),
