@@ -16,11 +16,15 @@ where
     F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
     R: RowStream,
 {
-    pub fn new(
+    pub fn new<H>(
         iter: I,
+        mut header_map: H,
         f: F,
-    ) -> AdjacentGroup<I, F> {
-        let headers = iter.headers().clone();
+    ) -> AdjacentGroup<I, F>
+    where
+        H: FnMut(Headers) -> Headers,
+    {
+        let headers = (header_map)(iter.headers().clone());
 
         AdjacentGroup {
             iter,
@@ -105,7 +109,11 @@ mod tests {
         )
         .unwrap();
 
-        let re = AdjacentGroup::new(iter, |row_stream| {
+        let re = AdjacentGroup::new(iter, |mut headers| {
+            headers.add("value");
+
+            headers
+        }, |row_stream| {
             let headers = row_stream.headers().clone();
             let rows: Vec<_> = row_stream.into_iter().collect();
             let mut sum = 0.0;
@@ -144,5 +152,10 @@ mod tests {
                 Row::from(vec!["b", "1", "3"]),
             ]
         );
+    }
+
+    #[test]
+    fn test_nonmatching_headers() {
+        unimplemented!()
     }
 }
