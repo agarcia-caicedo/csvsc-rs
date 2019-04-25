@@ -267,7 +267,11 @@ where
 #[cfg(test)]
 mod tests {
     use super::{interpolate, Add, ColSpec, Headers, Regex, Row, RowStream};
-    use crate::{SOURCE_FIELD, mock::MockStream};
+    use crate::{
+        SOURCE_FIELD,
+        mock::MockStream,
+        error::Error,
+    };
 
     #[test]
     fn test_colspec_simplest() {
@@ -348,6 +352,47 @@ mod tests {
         assert_eq!(
             add.next().unwrap().unwrap(),
             Row::from(vec!["4", "37", "/tmp/a2m.csv", "2"])
+        );
+    }
+
+    #[test]
+    fn test_add_doesnt_swallow_errors() {
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["a"])),
+                Ok(Row::from(vec!["1"])),
+                Err(Error::InconsistentHeaders),
+                Ok(Row::from(vec!["3"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
+
+        let add = Add::new(
+            iter,
+            vec!["value:b:1".parse().unwrap()],
+        ).unwrap();
+
+        assert_eq!(
+            *add.headers(),
+            Headers::from_row(Row::from(vec!["a", "b"])),
+        );
+
+        let mut add = add.into_iter();
+
+        assert_eq!(
+            add.next().unwrap().unwrap(),
+            Row::from(vec!["1", "1"])
+        );
+
+        match add.next() {
+            Some(Err(Error::InconsistentHeaders)) => {},
+            _ => unreachable!(),
+        }
+
+        assert_eq!(
+            add.next().unwrap().unwrap(),
+            Row::from(vec!["3", "1"])
         );
     }
 
