@@ -61,7 +61,9 @@ where
         }
 
         for col in aggregates.iter() {
-            headers.add(col.colname());
+            if let Err(_) = headers.add(col.colname()) {
+                return Err(ReduceBuildError::DuplicatedHeader(col.colname().to_string()));
+            }
         }
 
         for column in aggregates {

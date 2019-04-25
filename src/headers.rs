@@ -25,10 +25,17 @@ impl Headers {
         }
     }
 
-    pub fn add(&mut self, colname: &str) {
+    /// Adds a new header. It'll fail if the header is already present
+    pub fn add(&mut self, colname: &str) -> Result<(), ()> {
+        if self.indexes.contains_key(colname) {
+            return Err(());
+        }
+
         self.names.push_field(colname);
         self.indexes
             .insert(colname.to_string(), self.names.len() - 1);
+
+        Ok(())
     }
 
     pub fn len(&self) -> usize {
@@ -55,5 +62,19 @@ impl Headers {
 impl PartialEq<Headers> for Row {
     fn eq(&self, other: &Headers) -> bool {
         self == other.as_row()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Row;
+    use super::Headers;
+
+    #[test]
+    fn test_duplicated_header() {
+        let mut h = Headers::from_row(Row::from(vec!["name", "value"]));
+
+        assert_eq!(h.add("name"), Err(()));
+        assert_eq!(h, Headers::from_row(Row::from(vec!["name", "value"])));
     }
 }

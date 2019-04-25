@@ -110,7 +110,7 @@ mod tests {
         .unwrap();
 
         let re = AdjacentGroup::new(iter, |mut headers| {
-            headers.add("sum");
+            headers.add("sum").unwrap();
 
             headers
         }, |row_stream| {
@@ -130,6 +130,7 @@ mod tests {
 
             MockStream::new(rows.into_iter(), headers)
                 .add(vec![format!("value:sum:{}", sum).parse().unwrap()])
+                .unwrap()
         });
 
         assert_eq!(

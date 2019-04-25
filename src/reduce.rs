@@ -15,6 +15,7 @@ use group::Group;
 pub enum ReduceBuildError {
     GroupingKeyError(String),
     AggregateSourceError(String),
+    DuplicatedHeader(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -165,7 +166,9 @@ where
         }
 
         for col in columns.iter() {
-            headers.add(col.colname());
+            if let Err(_) = headers.add(col.colname()) {
+                return Err(ReduceBuildError::DuplicatedHeader(col.colname().to_string()));
+            }
         }
 
         for column in columns {

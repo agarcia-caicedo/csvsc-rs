@@ -5,7 +5,8 @@ use crate::{
     adjacent_sort::AdjacentSortBuildError,
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     AdjacentReduce, Del, AdjacentSort,
-    add::ColBuildError,
+    add::{ColBuildError, AddBuildError},
+    add_with::AddWithBuildError,
     Rename,
     flush::FlushTarget,
     error,
@@ -29,7 +30,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn headers(&self) -> &Headers;
 
     /// Allows adding columns to each row of the stream.
-    fn add(self, columns: Vec<ColSpec>) -> Add<Self>
+    fn add(self, columns: Vec<ColSpec>) -> Result<Add<Self>, AddBuildError>
     where
         Self: Sized,
     {
@@ -46,7 +47,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
 
     /// Adds a column to each row of the stream using a closure to compute its
     /// value
-    fn add_with<F>(self, colname: &str, f: F) -> AddWith<Self, F>
+    fn add_with<F>(self, colname: &str, f: F) -> Result<AddWith<Self, F>, AddWithBuildError>
     where
         Self: Sized,
         F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,

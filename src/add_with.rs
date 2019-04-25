@@ -4,6 +4,12 @@ use crate::{
     error::{Error, RowResult},
 };
 
+
+#[derive(Debug)]
+pub enum AddWithBuildError {
+    DuplicatedHeader(String),
+}
+
 /// Adds a column to each register using a closure to generate its data.
 ///
 /// The closure is passed the existing headers and current row.
@@ -18,16 +24,18 @@ where
     I: RowStream,
     F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
-    pub fn new(iter: I, colname: &str, f: F) -> AddWith<I, F> {
+    pub fn new(iter: I, colname: &str, f: F) -> Result<AddWith<I, F>, AddWithBuildError> {
         let mut headers = iter.headers().clone();
 
-        headers.add(colname);
+        if let Err(_) = headers.add(colname) {
+            return Err(AddWithBuildError::DuplicatedHeader(colname.to_string()));
+        }
 
-        AddWith{
+        Ok(AddWith{
             iter,
             f,
             headers,
-        }
+        })
     }
 }
 
@@ -113,7 +121,7 @@ mod tests {
 
                 Ok((v*v).to_string())
             }
-        );
+        ).unwrap();
 
         assert_eq!(
             *add.headers(),

@@ -171,6 +171,11 @@ impl FromStr for ColSpec {
     }
 }
 
+#[derive(Debug)]
+pub enum AddBuildError {
+    DuplicatedHeader(String),
+}
+
 /// Adds multiple columns to each register. They can be based on existing ones
 /// or the source filename.
 pub struct Add<I> {
@@ -183,21 +188,25 @@ impl<I> Add<I>
 where
     I: RowStream,
 {
-    pub fn new(iter: I, columns: Vec<ColSpec>) -> Add<I> {
+    pub fn new(iter: I, columns: Vec<ColSpec>) -> Result<Add<I>, AddBuildError> {
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
-            headers.add(match col {
+            let colname = match col {
                 ColSpec::Regex { colname, .. } => colname,
                 ColSpec::Mix { colname, .. } => colname,
-            });
+            };
+
+            if let Err(_) = headers.add(colname) {
+                return Err(AddBuildError::DuplicatedHeader(colname.to_string()));
+            }
         }
 
-        Add{
+        Ok(Add{
             iter,
             columns,
             headers,
-        }
+        })
     }
 }
 
@@ -315,7 +324,7 @@ mod tests {
         let add = Add::new(
             iter,
             vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
-        );
+        ).unwrap();
 
         assert_eq!(
             *add.headers(),

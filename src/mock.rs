@@ -1,5 +1,5 @@
 //! Provides a source of data from a vector, used in testing
-use crate::{Headers, Row, RowResult, RowStream};
+use crate::{Headers, RowResult, RowStream};
 
 #[derive(Debug, PartialEq)]
 pub enum BuildError {
@@ -71,7 +71,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Headers, MockStream, Row, RowStream};
+    use crate::Row;
+    use super::{Headers, MockStream, RowStream};
 
     #[test]
     fn test_mock_stream() {
