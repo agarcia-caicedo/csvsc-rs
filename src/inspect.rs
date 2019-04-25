@@ -10,7 +10,7 @@ pub struct Inspect<I, F> {
 impl<I, F> Inspect<I, F>
 where
     I: RowStream,
-    F: FnMut(&RowResult),
+    F: FnMut(&Headers, &RowResult),
 {
     pub fn new(iter: I, f: F) -> Inspect<I, F> {
         let headers = iter.headers().clone();
@@ -22,12 +22,13 @@ where
 pub struct IntoIter<I, F> {
     iter: I,
     f: F,
+    headers: Headers,
 }
 
 impl<I, F> Iterator for IntoIter<I, F>
 where
     I: Iterator<Item = RowResult>,
-    F: FnMut(&RowResult),
+    F: FnMut(&Headers, &RowResult),
 {
     type Item = RowResult;
 
@@ -35,7 +36,7 @@ where
         let next = self.iter.next();
 
         if let Some(ref a) = next {
-            (self.f)(a);
+            (self.f)(&self.headers, a);
         }
 
         next
@@ -45,7 +46,7 @@ where
 impl<I, F> IntoIterator for Inspect<I, F>
 where
     I: RowStream,
-    F: FnMut(&RowResult),
+    F: FnMut(&Headers, &RowResult),
 {
     type Item = RowResult;
 
@@ -55,6 +56,7 @@ where
         Self::IntoIter {
             iter: self.iter.into_iter(),
             f: self.f,
+            headers: self.headers,
         }
     }
 }
@@ -62,7 +64,7 @@ where
 impl<I, F> RowStream for Inspect<I, F>
 where
     I: RowStream,
-    F: FnMut(&RowResult),
+    F: FnMut(&Headers, &RowResult),
 {
     fn headers(&self) -> &Headers {
         &self.headers

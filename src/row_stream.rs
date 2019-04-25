@@ -111,7 +111,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn inspect<F>(self, f: F) -> Inspect<Self, F>
     where
         Self: Sized,
-        F: FnMut(&RowResult),
+        F: FnMut(&Headers, &RowResult),
     {
         Inspect::new(self, f)
     }
