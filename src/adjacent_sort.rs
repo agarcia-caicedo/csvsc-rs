@@ -23,7 +23,7 @@ where
 {
     pub fn new(
         iter: I,
-        grouping: Vec<&str>,
+        grouping: &[&str],
         sort_by: &str,
     ) -> Result<AdjacentSort<I>, AdjacentSortBuildError> {
         let mut group_by = Vec::with_capacity(grouping.len());
@@ -184,7 +184,7 @@ mod tests {
         )
         .unwrap();
 
-        let add = AdjacentSort::new(iter, vec!["a"], "b").unwrap();
+        let add = AdjacentSort::new(iter, &["a"], "b").unwrap();
 
         assert_eq!(
             *add.headers(),
@@ -235,7 +235,7 @@ mod tests {
         )
         .unwrap();
 
-        let add = AdjacentSort::new(iter, vec!["a"], "b").unwrap();
+        let add = AdjacentSort::new(iter, &["a"], "b").unwrap();
 
         assert_eq!(
             *add.headers(),

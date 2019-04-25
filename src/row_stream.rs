@@ -86,7 +86,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     /// stream.
     fn adjacent_sort(
         self,
-        grouping: Vec<&str>,
+        grouping: &[&str],
         sort_by: &str,
     ) -> Result<AdjacentSort<Self>, AdjacentSortBuildError>
     where

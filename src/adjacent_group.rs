@@ -3,12 +3,20 @@ use std::iter::Peekable;
 use crate::{
     RowStream, Headers, RowResult,
     mock::MockStream,
+    reduce::hash_row,
 };
+
+#[derive(Debug)]
+pub enum AdjacentGroupBuildError {
+    GroupingKeyError(String),
+    SortKeyError(String),
+}
 
 pub struct AdjacentGroup<I, F> {
     iter: I,
     f: F,
     headers: Headers,
+    group_by: Vec<String>,
 }
 
 impl<I, F, R> AdjacentGroup<I, F>
@@ -21,17 +29,30 @@ where
         iter: I,
         mut header_map: H,
         f: F,
-    ) -> AdjacentGroup<I, F>
+        grouping: &[&str],
+    ) -> Result<AdjacentGroup<I, F>, AdjacentGroupBuildError>
     where
         H: FnMut(Headers) -> Headers,
     {
-        let headers = (header_map)(iter.headers().clone());
+        let mut group_by = Vec::with_capacity(grouping.len());
+        let headers = iter.headers().clone();
 
-        AdjacentGroup {
+        for key in grouping.iter() {
+            if !headers.contains_key(key) {
+                return Err(AdjacentGroupBuildError::GroupingKeyError(key.to_string()));
+            }
+
+            group_by.push(key.to_string());
+        }
+
+        let headers = (header_map)(headers);
+
+        Ok(AdjacentGroup {
             iter,
             f,
             headers,
-        }
+            group_by,
+        })
     }
 }
 
@@ -43,6 +64,7 @@ where
     f: F,
     headers: Headers,
     current_group: Option<I>,
+    group_by: Vec<String>,
 }
 
 impl<I, F, R> Iterator for IntoIter<I, F>
@@ -78,11 +100,14 @@ where
             },
             None => match self.iter.peek() {
                 None => None,
-                Some(_) => {
-                    unimplemented!();
+                Some(Ok(_)) => {
+                    let first_row = self.iter.next().unwrap().unwrap();
+                    let current_hash = hash_row(&self.headers, &first_row, &self.group_by).unwrap();
+                    let current_group = vec![first_row];
 
                     self.next()
                 },
+                Some(Err(_)) => unimplemented!(),
             },
         }
     }
@@ -103,6 +128,7 @@ where
             iter: self.iter.into_iter().peekable(),
             f: self.f,
             headers: self.headers,
+            group_by: self.group_by,
             current_group: None,
         }
     }
@@ -167,7 +193,7 @@ mod tests {
             MockStream::new(rows.into_iter(), headers)
                 .add(vec![format!("value:sum:{}", sum).parse().unwrap()])
                 .unwrap()
-        });
+        }, &["name"]).unwrap();
 
         assert_eq!(
             *re.headers(),
@@ -193,6 +219,11 @@ mod tests {
 
     #[test]
     fn test_nonmatching_headers() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn test_some_errs_in_stream() {
         unimplemented!()
     }
 }
