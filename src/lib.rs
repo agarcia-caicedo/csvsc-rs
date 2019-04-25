@@ -52,7 +52,7 @@ fn main() {
         .add(vec![ColSpec::Mix {
             colname: "_target".to_string(),
             coldef: "output/{a}.csv".to_string(),
-        }])
+        }]).unwrap()
         .del(vec!["b"])
         .flush(FlushTarget::Column("_target".to_string())).unwrap()
         .into_iter();

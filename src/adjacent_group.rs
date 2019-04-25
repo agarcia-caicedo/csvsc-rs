@@ -142,7 +142,7 @@ where
 
                     self.next()
                 },
-                Some(Err(_)) => unimplemented!(),
+                Some(Err(_)) => self.iter.next(),
             },
         }
     }
@@ -291,6 +291,40 @@ mod tests {
 
     #[test]
     fn test_some_errs_in_stream() {
-        unimplemented!()
+        let iter = MockStream::from_rows(
+            vec![
+                Ok(Row::from(vec!["name", "value"])),
+                Ok(Row::from(vec!["a", "1"])),
+                Err(Error::InconsistentHeaders),
+                Ok(Row::from(vec!["b", "1"])),
+            ]
+            .into_iter(),
+        )
+        .unwrap();
+
+        let re = AdjacentGroup::new(iter, |headers| headers, |row_stream| row_stream, &["name"]).unwrap();
+
+        assert_eq!(
+            *re.headers(),
+            Headers::from_row(Row::from(vec!["name", "value"])),
+        );
+
+        let mut r = re.into_iter();
+
+        match r.next() {
+            Some(Ok(ref r)) if *r == Row::from(vec!["a", "1"]) => {},
+            _ => unreachable!(),
+        }
+        match r.next() {
+            Some(Err(Error::InconsistentHeaders)) => {},
+            _ => unreachable!(),
+        }
+        match r.next() {
+            Some(Ok(ref r)) if *r == Row::from(vec!["b", "1"]) => {},
+            _ => unreachable!(),
+        }
+        if let Some(_) = r.next() {
+            unreachable!()
+        }
     }
 }
