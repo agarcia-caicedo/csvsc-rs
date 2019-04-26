@@ -4,7 +4,7 @@ use std::str::FromStr;
 use strfmt::{strfmt_map, FmtError, Formatter};
 
 use crate::{
-    get_field, Headers, Row, RowStream,
+    Headers, Row, RowStream,
     error::{Error, RowResult},
 };
 
@@ -69,7 +69,7 @@ impl ColSpec {
     pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
         match *self {
             ColSpec::Mix { ref coldef, .. } => match strfmt_map(&coldef, &|mut fmt: Formatter| {
-                let v = match get_field(headers, data, fmt.key) {
+                let v = match headers.get_field(data, fmt.key) {
                     Some(v) => v,
                     None => {
                         return Err(FmtError::KeyError(fmt.key.to_string()));
@@ -87,7 +87,7 @@ impl ColSpec {
                 ref coldef,
                 ref regex,
                 ..
-            } => match get_field(headers, data, source) {
+            } => match headers.get_field(data, source) {
                 Some(field) => match regex.captures(field) {
                     Some(captures) => Ok(interpolate(&coldef, &captures)),
                     None => Err(ColBuildError::ReNoMatch(regex.clone(), field.to_string())),

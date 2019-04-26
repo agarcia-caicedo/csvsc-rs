@@ -101,7 +101,7 @@ pub use inspect::Inspect;
 pub use mock::MockStream;
 pub use reduce::Reduce;
 pub use rename::Rename;
-pub use row_stream::{get_field, RowStream};
+pub use row_stream::RowStream;
 
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;

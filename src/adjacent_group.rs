@@ -186,7 +186,6 @@ mod tests {
     use crate::{
         Headers,
         Row, RowStream,
-        get_field,
         mock::MockStream,
         error::Error,
     };
@@ -218,8 +217,7 @@ mod tests {
             let mut sum = 0.0;
 
             for row in rows.iter() {
-                let value: f64 = get_field(
-                    &headers,
+                let value: f64 = headers.get_field(
                     &row.as_ref().unwrap(),
                     "value"
                 ).unwrap().parse().unwrap();

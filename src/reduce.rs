@@ -1,4 +1,4 @@
-use crate::{get_field, Error, Headers, Row, RowResult, RowStream};
+use crate::{Error, Headers, Row, RowResult, RowStream};
 use std::collections::hash_map::{self, DefaultHasher};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -44,7 +44,7 @@ pub fn hash_row(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64,
     let mut hasher = DefaultHasher::new();
 
     for col in columns {
-        match get_field(headers, row, col) {
+        match headers.get_field(row, col) {
             Some(field) => field.hash(&mut hasher),
             None => return Err(HashError(col.to_string())),
         }

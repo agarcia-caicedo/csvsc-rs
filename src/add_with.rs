@@ -97,7 +97,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{AddWith, Headers, Row, RowStream};
-    use crate::{get_field, mock::MockStream};
+    use crate::mock::MockStream;
 
     #[test]
     fn test_add() {
@@ -117,7 +117,7 @@ mod tests {
             iter,
             "col",
             |headers, row| {
-                let v: i32 = get_field(headers, row, "id").unwrap().parse().unwrap();
+                let v: i32 = headers.get_field(row, "id").unwrap().parse().unwrap();
 
                 Ok((v*v).to_string())
             }

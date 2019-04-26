@@ -4,7 +4,7 @@ use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::result;
 use crate::{
-    get_field, Error, Headers, Row, RowResult, RowStream,
+    Error, Headers, Row, RowResult, RowStream,
     error::Result,
 };
 
@@ -80,7 +80,7 @@ impl<I> IntoIter<I> {
             FlushTarget::Column(ref colname) => {
                 // can unwrap because we checked the existence of the field
                 // while building the Flush
-                let target = PathBuf::from(get_field(&self.headers, row, &colname).unwrap());
+                let target = PathBuf::from(self.headers.get_field(&row, &colname).unwrap());
 
                 if self.targets.contains_key(&target) {
                     Ok(self.targets.get_mut(&target).unwrap())

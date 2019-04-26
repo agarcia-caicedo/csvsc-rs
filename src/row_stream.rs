@@ -14,11 +14,6 @@ use crate::{
     flush::FlushTarget,
 };
 
-/// Helper function that retrieves a field from a row given it's header name
-pub fn get_field<'r>(headers: &Headers, row: &'r Row, field: &str) -> Option<&'r str> {
-    headers.get(field).and_then(|i| row.get(i))
-}
-
 /// This trait describes de behaviour of every component in the CSV transformation
 /// chain. Functions provided by this trait help construct the chain and can be
 /// _chained_.
@@ -112,20 +107,5 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         Rename::new(self, name_map)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{get_field, Headers, Row};
-
-    #[test]
-    fn test_get_field() {
-        let headers = Headers::from_row(Row::from(vec!["id", "val"]));
-        let row = Row::from(vec!["1", "40"]);
-
-        assert_eq!(get_field(&headers, &row, "id"), Some("1"));
-        assert_eq!(get_field(&headers, &row, "val"), Some("40"));
-        assert_eq!(get_field(&headers, &row, "foo"), None);
     }
 }

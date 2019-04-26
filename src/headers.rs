@@ -25,7 +25,36 @@ impl Headers {
         }
     }
 
+    /// Retrieves a field from a row given it's header name
+    ///
+    /// ```rust
+    /// use csvsc::{Headers, Row};
+    ///
+    /// let headers = Headers::from_row(Row::from(vec!["id", "val"]));
+    /// let row = Row::from(vec!["1", "40"]);
+    ///
+    /// assert_eq!(headers.get_field(&row, "id"), Some("1"));
+    /// assert_eq!(headers.get_field(&row, "val"), Some("40"));
+    /// assert_eq!(headers.get_field(&row, "foo"), None);
+    /// ```
+    pub fn get_field<'r>(&self, row: &'r Row, field: &str) -> Option<&'r str> {
+        self.index(field).and_then(|i| row.get(i))
+    }
+
     /// Adds a new header. It'll fail if the header is already present
+    ///
+    /// ```rust
+    /// use csvsc::{Headers, Row};
+    ///
+    /// let mut h = Headers::from_row(Row::from(vec!["name"]));
+    ///
+    /// h.add("value").unwrap();
+    ///
+    /// assert_eq!(h, Headers::from_row(Row::from(vec!["name", "value"])));
+    ///
+    /// assert_eq!(h.add("name"), Err(()));
+    /// assert_eq!(h, Headers::from_row(Row::from(vec!["name", "value"])));
+    /// ```
     pub fn add(&mut self, colname: &str) -> Result<(), ()> {
         if self.indexes.contains_key(colname) {
             return Err(());
@@ -46,7 +75,7 @@ impl Headers {
         &self.names
     }
 
-    pub fn get(&self, field: &str) -> Option<usize> {
+    fn index(&self, field: &str) -> Option<usize> {
         self.indexes.get(field).map(|u| *u)
     }
 
@@ -62,19 +91,5 @@ impl Headers {
 impl PartialEq<Headers> for Row {
     fn eq(&self, other: &Headers) -> bool {
         self == other.as_row()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Row;
-    use super::Headers;
-
-    #[test]
-    fn test_duplicated_header() {
-        let mut h = Headers::from_row(Row::from(vec!["name", "value"]));
-
-        assert_eq!(h.add("name"), Err(()));
-        assert_eq!(h, Headers::from_row(Row::from(vec!["name", "value"])));
     }
 }
