@@ -102,50 +102,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Add, ColSpec, Headers, Regex, Row, RowStream};
+    use super::{Add, RowStream};
     use crate::{
-        SOURCE_FIELD,
+        Row, Headers,
         mock::MockStream,
         error::Error,
     };
-
-    #[test]
-    fn test_colspec_simplest() {
-        let c: ColSpec = "value:new:value".parse().unwrap();
-        let data = Row::new();
-
-        assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["a"])))
-                .unwrap(),
-            "value",
-        );
-    }
-
-    #[test]
-    fn test_colspec_regex_source() {
-        let c: ColSpec = "regex:_source:new:${number}:a(?P<number>[0-9]+)m"
-            .parse()
-            .unwrap();
-        let data = Row::from(vec!["a20m"]);
-
-        assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec![SOURCE_FIELD])))
-                .unwrap(),
-            "20",
-        );
-    }
-
-    #[test]
-    fn test_colspec_mix() {
-        let c: ColSpec = "value:new:{a}-{b}".parse().expect("could not parse");
-        let data = Row::from(vec!["2", "4"]);
-
-        assert_eq!(
-            c.compute(&data, &Headers::from_row(Row::from(vec!["a", "b"])))
-                .unwrap(),
-            "2-4",
-        );
-    }
 
     #[test]
     fn test_add() {
