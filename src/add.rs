@@ -6,6 +6,7 @@ use strfmt::{strfmt_map, FmtError, Formatter};
 use crate::{
     Headers, Row, RowStream,
     error::{Error, RowResult},
+    col,
 };
 
 /// Clases de errores que pueden pasar al interpretar la especificación de
@@ -20,17 +21,6 @@ pub enum ColSpecParseError {
     InvalidSpec,
 }
 
-/// Clases de errores que se pueden generar al construir una columna para
-/// agregar a cada registro.
-#[derive(Debug)]
-pub enum ColBuildError {
-    UnknownSource,
-    ReNoMatch(Regex, String),
-    InvalidFormat,
-    KeyError(String),
-}
-
-// TODO replaceme with strfmt::format maybe
 fn interpolate(template: &str, captures: &Captures) -> String {
     let mut res = String::new();
 
@@ -66,7 +56,7 @@ pub enum ColSpec {
 }
 
 impl ColSpec {
-    pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, ColBuildError> {
+    pub fn compute(&self, data: &Row, headers: &Headers) -> Result<String, col::BuildError> {
         match *self {
             ColSpec::Mix { ref coldef, .. } => match strfmt_map(&coldef, &|mut fmt: Formatter| {
                 let v = match headers.get_field(data, fmt.key) {
@@ -78,9 +68,9 @@ impl ColSpec {
                 fmt.str(v)
             }) {
                 Ok(s) => Ok(s),
-                Err(FmtError::Invalid(_)) => Err(ColBuildError::InvalidFormat),
-                Err(FmtError::KeyError(s)) => Err(ColBuildError::KeyError(s)),
-                Err(FmtError::TypeError(_)) => Err(ColBuildError::InvalidFormat),
+                Err(FmtError::Invalid(_)) => Err(col::BuildError::InvalidFormat),
+                Err(FmtError::KeyError(s)) => Err(col::BuildError::KeyError(s)),
+                Err(FmtError::TypeError(_)) => Err(col::BuildError::InvalidFormat),
             },
             ColSpec::Regex {
                 ref source,
@@ -90,9 +80,9 @@ impl ColSpec {
             } => match headers.get_field(data, source) {
                 Some(field) => match regex.captures(field) {
                     Some(captures) => Ok(interpolate(&coldef, &captures)),
-                    None => Err(ColBuildError::ReNoMatch(regex.clone(), field.to_string())),
+                    None => Err(col::BuildError::ReNoMatch(regex.clone(), field.to_string())),
                 },
-                None => Err(ColBuildError::UnknownSource),
+                None => Err(col::BuildError::KeyError(source.to_string())),
             },
         }
     }

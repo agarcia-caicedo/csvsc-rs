@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::result;
 
-use crate::{Row, add::ColBuildError};
+use crate::{Row, col};
 
 /// An error found somewhere in the transformation chain.
 #[derive(Debug)]
@@ -11,7 +11,7 @@ pub enum Error {
     Csv(csv::Error),
     InconsistentHeaders,
     InconsistentSizeOfRows(PathBuf),
-    ColBuildError(ColBuildError),
+    ColBuildError(col::BuildError),
     ColumnNotFound(String),
 }
 

@@ -88,8 +88,9 @@ mod mock;
 mod reduce;
 mod rename;
 mod row_stream;
+pub mod col;
 
-pub use add::{Add, ColSpec, ColBuildError};
+pub use add::{Add, ColSpec};
 pub use add_with::AddWith;
 pub use adjacent_group::AdjacentGroup;
 pub use del::Del;

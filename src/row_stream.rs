@@ -4,13 +4,12 @@ use std::{
 };
 
 use crate::{
-    reduce::{self, AggregatedCol},
-    adjacent_group,
-    add::{self, ColBuildError},
-    add_with,
+    adjacent_group, add, col, add_with, error,
+
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     Del, AdjacentGroup, MockStream, Rename,
-    error,
+
+    reduce::{self, AggregatedCol},
     flush::FlushTarget,
 };
 
@@ -47,7 +46,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn add_with<F>(self, colname: &str, f: F) -> Result<AddWith<Self, F>, add_with::BuildError>
     where
         Self: Sized,
-        F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
+        F: FnMut(&Headers, &Row) -> Result<String, col::BuildError>,
     {
         AddWith::new(self, colname, f)
     }

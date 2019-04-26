@@ -258,7 +258,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{hash_row, Error, HashError, Headers, Reduce};
-    use crate::{Row, add::ColBuildError, mock::MockStream};
+    use crate::{Row, col, mock::MockStream};
 
     #[test]
     fn test_reduce_id_function() {
@@ -419,7 +419,7 @@ mod tests {
         let iter = MockStream::from_rows(
             vec![
                 Ok(Row::from(vec!["a", "b"])),
-                Err(Error::ColBuildError(ColBuildError::InvalidFormat)),
+                Err(Error::ColBuildError(col::BuildError::InvalidFormat)),
                 Ok(Row::from(vec!["1", "2"])),
                 Ok(Row::from(vec!["1", "4"])),
                 Ok(Row::from(vec!["2", "7"])),
@@ -434,7 +434,7 @@ mod tests {
             .into_iter();
 
         match r.next().unwrap().unwrap_err() {
-            Error::ColBuildError(ColBuildError::InvalidFormat) => {}
+            Error::ColBuildError(col::BuildError::InvalidFormat) => {}
             _ => panic!("didn't expect this"),
         }
 
