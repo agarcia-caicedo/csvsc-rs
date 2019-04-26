@@ -12,7 +12,7 @@ use aggregate::Aggregate;
 use group::Group;
 
 #[derive(Debug)]
-pub enum ReduceBuildError {
+pub enum BuildError {
     GroupingKeyError(String),
     AggregateSourceError(String),
     DuplicatedHeader(String),
@@ -133,13 +133,13 @@ where
         iter: I,
         grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
-    ) -> Result<Reduce<I>, ReduceBuildError> {
+    ) -> Result<Reduce<I>, BuildError> {
         let mut headers = iter.headers().clone();
         let mut group_by = Vec::with_capacity(grouping.len());
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
-                return Err(ReduceBuildError::GroupingKeyError(key.to_string()));
+                return Err(BuildError::GroupingKeyError(key.to_string()));
             }
 
             group_by.push(key.to_string());
@@ -159,7 +159,7 @@ where
 
         for col in columns.iter() {
             if !headers.contains_key(col.source()) {
-                return Err(ReduceBuildError::AggregateSourceError(
+                return Err(BuildError::AggregateSourceError(
                     col.source().to_string(),
                 ));
             }
@@ -167,7 +167,7 @@ where
 
         for col in columns.iter() {
             if let Err(_) = headers.add(col.colname()) {
-                return Err(ReduceBuildError::DuplicatedHeader(col.colname().to_string()));
+                return Err(BuildError::DuplicatedHeader(col.colname().to_string()));
             }
         }
 

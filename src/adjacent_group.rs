@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum AdjacentGroupBuildError {
+pub enum BuildError {
     GroupingKeyError(String),
     SortKeyError(String),
 }
@@ -32,7 +32,7 @@ where
         mut header_map: H,
         f: F,
         grouping: &[&str],
-    ) -> Result<AdjacentGroup<I, F>, AdjacentGroupBuildError>
+    ) -> Result<AdjacentGroup<I, F>, BuildError>
     where
         H: FnMut(Headers) -> Headers,
     {
@@ -42,7 +42,7 @@ where
 
         for key in grouping.iter() {
             if !headers.contains_key(key) {
-                return Err(AdjacentGroupBuildError::GroupingKeyError(key.to_string()));
+                return Err(BuildError::GroupingKeyError(key.to_string()));
             }
 
             group_by.push(key.to_string());

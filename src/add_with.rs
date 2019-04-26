@@ -6,7 +6,7 @@ use crate::{
 
 
 #[derive(Debug)]
-pub enum AddWithBuildError {
+pub enum BuildError {
     DuplicatedHeader(String),
 }
 
@@ -24,11 +24,11 @@ where
     I: RowStream,
     F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
 {
-    pub fn new(iter: I, colname: &str, f: F) -> Result<AddWith<I, F>, AddWithBuildError> {
+    pub fn new(iter: I, colname: &str, f: F) -> Result<AddWith<I, F>, BuildError> {
         let mut headers = iter.headers().clone();
 
         if let Err(_) = headers.add(colname) {
-            return Err(AddWithBuildError::DuplicatedHeader(colname.to_string()));
+            return Err(BuildError::DuplicatedHeader(colname.to_string()));
         }
 
         Ok(AddWith{

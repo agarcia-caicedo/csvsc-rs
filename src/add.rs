@@ -172,7 +172,7 @@ impl FromStr for ColSpec {
 }
 
 #[derive(Debug)]
-pub enum AddBuildError {
+pub enum BuildError {
     DuplicatedHeader(String),
 }
 
@@ -188,7 +188,7 @@ impl<I> Add<I>
 where
     I: RowStream,
 {
-    pub fn new(iter: I, columns: Vec<ColSpec>) -> Result<Add<I>, AddBuildError> {
+    pub fn new(iter: I, columns: Vec<ColSpec>) -> Result<Add<I>, BuildError> {
         let mut headers = iter.headers().clone();
 
         for col in columns.iter() {
@@ -198,7 +198,7 @@ where
             };
 
             if let Err(_) = headers.add(colname) {
-                return Err(AddBuildError::DuplicatedHeader(colname.to_string()));
+                return Err(BuildError::DuplicatedHeader(colname.to_string()));
             }
         }
 

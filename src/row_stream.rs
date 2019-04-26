@@ -4,10 +4,10 @@ use std::{
 };
 
 use crate::{
-    reduce::{AggregatedCol, ReduceBuildError},
-    adjacent_group::AdjacentGroupBuildError,
-    add::{ColBuildError, AddBuildError},
-    add_with::AddWithBuildError,
+    reduce::{self, AggregatedCol},
+    adjacent_group,
+    add::{self, ColBuildError},
+    add_with,
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     Del, AdjacentGroup, MockStream, Rename,
     error,
@@ -27,7 +27,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn headers(&self) -> &Headers;
 
     /// Allows adding columns to each row of the stream.
-    fn add(self, columns: Vec<ColSpec>) -> Result<Add<Self>, AddBuildError>
+    fn add(self, columns: Vec<ColSpec>) -> Result<Add<Self>, add::BuildError>
     where
         Self: Sized,
     {
@@ -44,7 +44,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
 
     /// Adds a column to each row of the stream using a closure to compute its
     /// value
-    fn add_with<F>(self, colname: &str, f: F) -> Result<AddWith<Self, F>, AddWithBuildError>
+    fn add_with<F>(self, colname: &str, f: F) -> Result<AddWith<Self, F>, add_with::BuildError>
     where
         Self: Sized,
         F: FnMut(&Headers, &Row) -> Result<String, ColBuildError>,
@@ -58,7 +58,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         self,
         grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
-    ) -> Result<Reduce<Self>, ReduceBuildError>
+    ) -> Result<Reduce<Self>, reduce::BuildError>
     where
         Self: Sized,
     {
@@ -70,7 +70,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         header_map: H,
         f: F,
         grouping: &[&str],
-    ) -> Result<AdjacentGroup<Self, F>, AdjacentGroupBuildError>
+    ) -> Result<AdjacentGroup<Self, F>, adjacent_group::BuildError>
     where
         H: FnMut(Headers) -> Headers,
         F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
