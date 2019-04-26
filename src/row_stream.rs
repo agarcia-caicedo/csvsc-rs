@@ -5,12 +5,11 @@ use std::{
 
 use crate::{
     reduce::{AggregatedCol, ReduceBuildError},
-    adjacent_sort::AdjacentSortBuildError,
     adjacent_group::AdjacentGroupBuildError,
     add::{ColBuildError, AddBuildError},
     add_with::AddWithBuildError,
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
-    AdjacentReduce, Del, AdjacentSort, AdjacentGroup, MockStream, Rename,
+    Del, AdjacentGroup, MockStream, Rename,
     error,
     flush::FlushTarget,
 };
@@ -84,33 +83,6 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         AdjacentGroup::new(self, header_map, f, grouping)
-    }
-
-    /// Group by one or more columns, but create an output row as soon as the
-    /// grouping key changes in the input stream.
-    fn adjacent_reduce(
-        self,
-        grouping: Vec<&str>,
-        columns: Vec<AggregatedCol>,
-    ) -> Result<AdjacentReduce<Self>, ReduceBuildError>
-    where
-        Self: Sized,
-    {
-        AdjacentReduce::new(self, grouping, columns)
-    }
-
-    /// Group by one or more columns and sort the rows by the given column.
-    /// Output a sorted group as soon as the grouping key changes in the input
-    /// stream.
-    fn adjacent_sort(
-        self,
-        grouping: &[&str],
-        sort_by: &str,
-    ) -> Result<AdjacentSort<Self>, AdjacentSortBuildError>
-    where
-        Self: Sized,
-    {
-        AdjacentSort::new(self, grouping, sort_by)
     }
 
     /// When consumed, writes to destination specified by the column given in

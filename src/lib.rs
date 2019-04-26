@@ -78,8 +78,6 @@ archivos de salida.
 mod add;
 mod add_with;
 mod adjacent_group;
-mod adjacent_reduce;
-mod adjacent_sort;
 mod del;
 mod error;
 mod flush;
@@ -93,12 +91,7 @@ mod row_stream;
 
 pub use add::{Add, ColSpec, ColBuildError};
 pub use add_with::AddWith;
-// TODO rethink this whole adjacent thing... it might be a good idea to abstract
-// it into something better that calls a closure with a vector of adjacent rows
-// for example, then implement stuff on top of that
 pub use adjacent_group::AdjacentGroup;
-pub use adjacent_reduce::AdjacentReduce;
-pub use adjacent_sort::AdjacentSort;
 pub use del::Del;
 pub use error::{Error, RowResult};
 pub use flush::{Flush, FlushTarget};
