@@ -52,7 +52,7 @@ impl Headers {
     /// let headers = Headers::from_row(Row::from(vec!["id", "name", "val"]));
     /// let row = Row::from(vec!["1", "juan", "40"]);
     ///
-    /// dbg!(headers.hash(&row, ["id", "name"]));
+    /// dbg!(headers.hash(&row, &["id".to_string(), "name".to_string()]));
     /// ```
     ///
     /// If no columns are specified, a random hash is chosen. If a column is not
@@ -125,5 +125,41 @@ impl Headers {
 impl PartialEq<Headers> for Row {
     fn eq(&self, other: &Headers) -> bool {
         self == other.as_row()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Headers;
+    use crate::Row;
+
+    #[test]
+    fn test_hash() {
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["a".to_string()];
+
+        assert_eq!(
+            header.hash(&data, &cols).unwrap(),
+            16569625464242099095
+        );
+
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["a".to_string(), "b".to_string()];
+
+        assert_eq!(
+            header.hash(&data, &cols).unwrap(),
+            15633344752900483833
+        );
+
+        let header = Headers::from_row(Row::from(vec!["a", "b"]));
+        let data = Row::from(vec!["1", "2"]);
+        let cols = vec!["d".to_string()];
+
+        assert_eq!(
+            header.hash(&data, &cols),
+            Err("d".to_string())
+        );
     }
 }

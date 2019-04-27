@@ -163,7 +163,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_row, Error, HashError, Headers, Reduce};
+    use super::{Error, Reduce};
     use crate::{Row, col, mock::MockStream};
 
     #[test]
@@ -354,36 +354,6 @@ mod tests {
                 Row::from(vec!["1", "4", "6"]),
                 Row::from(vec!["2", "9", "16"]),
             ]
-        );
-    }
-
-    #[test]
-    fn test_hash() {
-        let header = Headers::from_row(Row::from(vec!["a", "b"]));
-        let data = Row::from(vec!["1", "2"]);
-        let cols = vec!["a".to_string()];
-
-        assert_eq!(
-            hash_row(&header, &data, &cols).unwrap(),
-            16569625464242099095
-        );
-
-        let header = Headers::from_row(Row::from(vec!["a", "b"]));
-        let data = Row::from(vec!["1", "2"]);
-        let cols = vec!["a".to_string(), "b".to_string()];
-
-        assert_eq!(
-            hash_row(&header, &data, &cols).unwrap(),
-            15633344752900483833
-        );
-
-        let header = Headers::from_row(Row::from(vec!["a", "b"]));
-        let data = Row::from(vec!["1", "2"]);
-        let cols = vec!["d".to_string()];
-
-        assert_eq!(
-            hash_row(&header, &data, &cols),
-            Err(HashError("d".to_string()))
         );
     }
 }
