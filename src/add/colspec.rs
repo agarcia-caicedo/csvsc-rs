@@ -42,7 +42,6 @@ pub enum ColSpec {
     Mix { colname: String, coldef: String },
 }
 
-// TODO intégrame en ColSpec
 fn interpolate(template: &str, captures: &Captures) -> String {
     let mut res = String::new();
 
