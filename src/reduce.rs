@@ -21,17 +21,6 @@ pub enum BuildError {
 #[derive(Debug, PartialEq)]
 pub struct HashError(String);
 
-#[derive(Debug)]
-pub enum ConsumeError {
-    KeyError(String),
-}
-
-impl From<HashError> for ConsumeError {
-    fn from(column: HashError) -> ConsumeError {
-        ConsumeError::KeyError(column.0)
-    }
-}
-
 /// Creates a hash for the data described by the three arguments as follows:
 /// `columns` are used to locate the values in `row` as specified by `headers`.
 ///
