@@ -1,6 +1,8 @@
 use csv::StringRecordIter;
 use std::cmp::PartialEq;
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use crate::Row;
 
@@ -39,6 +41,38 @@ impl Headers {
     /// ```
     pub fn get_field<'r>(&self, row: &'r Row, field: &str) -> Option<&'r str> {
         self.index(field).and_then(|i| row.get(i))
+    }
+
+    /// Creates a hash for the row given as first argument only considering the
+    /// columns specified by the second argument.
+    ///
+    /// ```rust
+    /// use csvsc::{Headers, Row};
+    ///
+    /// let headers = Headers::from_row(Row::from(vec!["id", "name", "val"]));
+    /// let row = Row::from(vec!["1", "juan", "40"]);
+    ///
+    /// dbg!(headers.hash(&row, ["id", "name"]));
+    /// ```
+    ///
+    /// If no columns are specified, a random hash is chosen. If a column is not
+    /// found its name is returned as String wrapped in the Err variant of the
+    /// return value
+    pub fn hash(&self, row: &Row, columns: &[String]) -> Result<u64, String> {
+        if columns.len() == 0 {
+            return Ok(rand::random());
+        }
+
+        let mut hasher = DefaultHasher::new();
+
+        for col in columns {
+            match self.get_field(row, col) {
+                Some(field) => field.hash(&mut hasher),
+                None => return Err(col.to_string()),
+            }
+        }
+
+        Ok(hasher.finish())
     }
 
     /// Adds a new header. It'll fail if the header is already present

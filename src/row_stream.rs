@@ -9,7 +9,7 @@ use crate::{
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     Del, AdjacentGroup, MockStream, Rename,
 
-    reduce::{self, AggregatedCol},
+    reduce::{self, aggregated_col::AggregatedCol},
     flush::FlushTarget,
 };
 

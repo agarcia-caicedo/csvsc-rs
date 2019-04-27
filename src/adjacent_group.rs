@@ -3,7 +3,6 @@ use std::iter::Peekable;
 use crate::{
     RowStream, Headers, RowResult,
     mock::MockStream,
-    reduce::hash_row,
     error::Error,
 };
 
@@ -113,12 +112,12 @@ where
                 None => None,
                 Some(Ok(_)) => {
                     let first_row = self.iter.next().unwrap().unwrap();
-                    let current_hash = hash_row(&self.headers, &first_row, &self.group_by).unwrap();
+                    let current_hash = self.headers.hash(&first_row, &self.group_by).unwrap();
                     let mut current_group = vec![Ok(first_row)];
 
                     loop {
                         if let Some(Ok(next_row)) = self.iter.peek() {
-                            let next_hash = hash_row(&self.headers, next_row, &self.group_by).unwrap();
+                            let next_hash = self.headers.hash(next_row, &self.group_by).unwrap();
 
                             if next_hash == current_hash {
                                 current_group.push(self.iter.next().unwrap());

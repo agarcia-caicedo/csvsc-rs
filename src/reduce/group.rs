@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregatedCol};
+use super::{Aggregate, aggregated_col::AggregatedCol};
 use crate::{Headers, Row};
 
 pub struct Group {

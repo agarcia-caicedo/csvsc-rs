@@ -1,16 +1,17 @@
-use crate::{Error, Headers, Row, RowResult, RowStream};
-use std::collections::hash_map::{self, DefaultHasher};
+use crate::{Error, Headers, RowResult, RowStream};
+use std::collections::hash_map;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-use std::str::FromStr;
 
 pub mod aggregate;
 pub mod group;
+pub mod aggregated_col;
 
 use aggregate::Aggregate;
 use group::Group;
+use aggregated_col::AggregatedCol;
 
+/// Kinds of errors that can happen when building a Reduce processor.
 #[derive(Debug)]
 pub enum BuildError {
     GroupingKeyError(String),
@@ -18,95 +19,8 @@ pub enum BuildError {
     DuplicatedHeader(String),
 }
 
-#[derive(Debug, PartialEq)]
-pub struct HashError(String);
-
-/// Creates a hash for the data described by the three arguments as follows:
-/// `columns` are used to locate the values in `row` as specified by `headers`.
-///
-/// If no columns are specified, a random hash is chosen.
-pub fn hash_row(headers: &Headers, row: &Row, columns: &[String]) -> Result<u64, HashError> {
-    if columns.len() == 0 {
-        return Ok(rand::random());
-    }
-
-    let mut hasher = DefaultHasher::new();
-
-    for col in columns {
-        match headers.get_field(row, col) {
-            Some(field) => field.hash(&mut hasher),
-            None => return Err(HashError(col.to_string())),
-        }
-    }
-
-    Ok(hasher.finish())
-}
-
-#[derive(Debug)]
-pub enum AggregatedColParseError {
-    /// The specified string is not composed of exactly three words separated
-    /// by two colons
-    NotEnoughParts,
-    UnknownAggregate(String),
-}
-
-#[derive(Clone)]
-pub struct AggregatedCol {
-    colname: String,
-    source: Rc<String>,
-    aggregate: Box<dyn Aggregate>,
-}
-
-impl AggregatedCol {
-    pub fn new(colname: &str, source: Rc<String>, aggregate: Box<dyn Aggregate>) -> AggregatedCol {
-        AggregatedCol {
-            colname: colname.to_string(),
-            source,
-            aggregate,
-        }
-    }
-
-    pub fn colname(&self) -> &str {
-        &self.colname
-    }
-
-    pub fn source(&self) -> &str {
-        &self.source
-    }
-
-    fn aggregate(&self) -> &Box<dyn Aggregate> {
-        &self.aggregate
-    }
-}
-
-impl FromStr for AggregatedCol {
-    type Err = AggregatedColParseError;
-
-    fn from_str(def: &str) -> Result<AggregatedCol, Self::Err> {
-        let pieces: Vec<&str> = def.split(':').collect();
-
-        if pieces.len() != 3 {
-            return Err(AggregatedColParseError::NotEnoughParts);
-        }
-
-        let source = Rc::new(pieces[2].to_string());
-
-        Ok(AggregatedCol {
-            colname: pieces[0].to_string(),
-            aggregate: match pieces[1] {
-                "sum" => Box::new(aggregate::Sum::new(Rc::clone(&source))),
-                "last" => Box::new(aggregate::Last::new(Rc::clone(&source))),
-                "avg" => Box::new(aggregate::Avg::new(Rc::clone(&source))),
-                "min" => Box::new(aggregate::Min::new(Rc::clone(&source))),
-                "max" => Box::new(aggregate::Max::new(Rc::clone(&source))),
-                s => return Err(AggregatedColParseError::UnknownAggregate(s.to_string())),
-            },
-            source,
-        })
-    }
-}
-
-/// Used to aggregate the rows, yielding the results as a new stream of rows.
+/// Used to group and aggregate the rows, yielding the results as a new stream
+/// of rows with potentially new columns.
 pub struct Reduce<I> {
     iter: I,
     group_by: Vec<String>,
@@ -118,6 +32,9 @@ impl<I> Reduce<I>
 where
     I: RowStream,
 {
+    /// Creates a new Reduce from an implementor of the RowStream trait, a set
+    /// of column names for grouping and a set of aggregates to calculate and
+    /// add as columns.
     pub fn new(
         iter: I,
         grouping: Vec<&str>,
@@ -139,11 +56,11 @@ where
         for header in headers.iter() {
             let source = Rc::new(header.to_string());
 
-            whole_columns.push(AggregatedCol {
-                colname: header.to_string(),
-                source: Rc::clone(&source),
-                aggregate: Box::new(aggregate::Last::new(Rc::clone(&source))),
-            });
+            whole_columns.push(AggregatedCol::new(
+                header,
+                Rc::clone(&source),
+                Box::new(aggregate::Last::new(Rc::clone(&source))),
+            ));
         }
 
         for col in columns.iter() {
@@ -207,7 +124,7 @@ where
         for result in iter {
             match result {
                 Ok(item) => {
-                    let row_hash = hash_row(&headers, &item, &self.group_by).unwrap();
+                    let row_hash = headers.hash(&item, &self.group_by).unwrap();
 
                     groups
                         .entry(row_hash)
