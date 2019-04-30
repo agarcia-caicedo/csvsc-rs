@@ -52,6 +52,7 @@ impl FromStr for AggregatedCol {
                 "avg" => Box::new(aggregate::Avg::new(&pieces[2..])?),
                 "min" => Box::new(aggregate::Min::new(&pieces[2..])?),
                 "max" => Box::new(aggregate::Max::new(&pieces[2..])?),
+                "count" => Box::new(aggregate::Count::new(&pieces[2..])?),
                 s => return Err(AggregateParseError::UnknownAggregate(s.to_string())),
             },
         })
@@ -65,6 +66,15 @@ mod tests {
     #[test]
     fn test_parse_sum() {
         let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.source(), "prev");
+        assert_eq!(col.aggregate().value(), "0");
+    }
+
+    #[test]
+    fn test_parse_cout() {
+        let col: AggregatedCol = "newcol:count".parse().unwrap();
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.source(), "prev");

@@ -6,12 +6,14 @@ mod last;
 mod max;
 mod min;
 mod sum;
+mod count;
 
 pub use avg::Avg;
 pub use last::Last;
 pub use max::Max;
 pub use min::Min;
 pub use sum::Sum;
+pub use count::Count;
 
 /// Kinds of errors that could happend when creating an AggregatedCol.
 #[derive(Debug)]
