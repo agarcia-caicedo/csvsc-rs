@@ -50,15 +50,21 @@ impl Aggregate for Avg {
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Avg};
+    use crate::{Headers, Row};
 
     #[test]
     fn test_avg() {
-        let mut avg = Avg::new(&[""]);
+        let mut avg = Avg::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["a"]));
 
-        avg.update("3.0").unwrap();
-        avg.update("2").unwrap();
-        avg.update(".5").unwrap();
-        avg.update(".5").unwrap();
+        let r = Row::from(vec!["3.0"]);
+        avg.update(&h, &r).unwrap();
+        let r = Row::from(vec!["2"]);
+        avg.update(&h, &r).unwrap();
+        let r = Row::from(vec![".5"]);
+        avg.update(&h, &r).unwrap();
+        let r = Row::from(vec![".5"]);
+        avg.update(&h, &r).unwrap();
 
         assert_eq!(avg.value(), "1.5");
     }

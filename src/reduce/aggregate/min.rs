@@ -60,14 +60,19 @@ impl Aggregate for Min {
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Min};
+    use crate::{Headers, Row};
 
     #[test]
     fn test_min() {
-        let mut min = Min::new(&[""]);
+        let mut min = Min::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["a"]));
 
-        min.update("3.0").unwrap();
-        min.update("2").unwrap();
-        min.update(".5").unwrap();
+        let r = Row::from(vec!["3.0"]);
+        min.update(&h, &r).unwrap();
+        let r = Row::from(vec!["2"]);
+        min.update(&h, &r).unwrap();
+        let r = Row::from(vec![".5"]);
+        min.update(&h, &r).unwrap();
 
         assert_eq!(min.value(), "0.5");
     }

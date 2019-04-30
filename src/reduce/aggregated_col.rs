@@ -68,7 +68,6 @@ mod tests {
         let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
 
         assert_eq!(col.colname(), "newcol");
-        assert_eq!(col.source(), "prev");
         assert_eq!(col.aggregate().value(), "0");
     }
 
@@ -77,7 +76,6 @@ mod tests {
         let col: AggregatedCol = "newcol:count".parse().unwrap();
 
         assert_eq!(col.colname(), "newcol");
-        assert_eq!(col.source(), "prev");
         assert_eq!(col.aggregate().value(), "0");
     }
 }

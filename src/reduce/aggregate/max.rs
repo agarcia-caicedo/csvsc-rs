@@ -60,14 +60,19 @@ impl Aggregate for Max {
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Max};
+    use crate::{Headers, Row};
 
     #[test]
     fn test_max() {
-        let mut max = Max::new(&[""]);
+        let mut max = Max::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["a"]));
 
-        max.update("3.0").unwrap();
-        max.update("2").unwrap();
-        max.update(".5").unwrap();
+        let r = Row::from(vec!["3.0"]);
+        max.update(&h, &r).unwrap();
+        let r = Row::from(vec!["2"]);
+        max.update(&h, &r).unwrap();
+        let r = Row::from(vec![".5"]);
+        max.update(&h, &r).unwrap();
 
         assert_eq!(max.value(), "3");
     }

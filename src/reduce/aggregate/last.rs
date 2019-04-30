@@ -41,14 +41,19 @@ impl Aggregate for Last {
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Last};
+    use crate::{Headers, Row};
 
     #[test]
     fn test_last() {
-        let mut sum = Last::new(&[""]);
+        let mut sum = Last::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["a"]));
 
-        sum.update("3.0").unwrap();
-        sum.update("2").unwrap();
-        sum.update(".5").unwrap();
+        let r = Row::from(vec!["3.0"]);
+        sum.update(&h, &r).unwrap();
+        let r = Row::from(vec!["2"]);
+        sum.update(&h, &r).unwrap();
+        let r = Row::from(vec![".5"]);
+        sum.update(&h, &r).unwrap();
 
         assert_eq!(sum.value(), ".5");
     }

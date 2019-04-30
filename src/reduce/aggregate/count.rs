@@ -35,14 +35,17 @@ impl Aggregate for Count {
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Count};
+    use crate::{Headers, Row};
 
     #[test]
     fn test_count() {
-        let mut count = Count::new(&[""]);
+        let mut count = Count::new(&[""]).unwrap();
+        let h = Headers::from_row(Row::new());
+        let r = Row::new();
 
-        count.update("3.0").unwrap();
-        count.update("2").unwrap();
-        count.update(".5").unwrap();
+        count.update(&h, &r).unwrap();
+        count.update(&h, &r).unwrap();
+        count.update(&h, &r).unwrap();
 
         assert_eq!(count.value(), "3");
     }
