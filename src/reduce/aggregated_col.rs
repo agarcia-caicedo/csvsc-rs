@@ -1,17 +1,5 @@
-use std::rc::Rc;
 use std::str::FromStr;
-use super::aggregate::{self, Aggregate};
-
-/// Kinds of errors that could happend when creating an AggregatedCol.
-#[derive(Debug)]
-pub enum AggregatedColParseError {
-    /// The specified string is not composed of exactly three words separated
-    /// by two colons
-    WrongNumberOfParts,
-
-    /// The given aggregate is not in the known list
-    UnknownAggregate(String),
-}
+use super::aggregate::{self, Aggregate, AggregateParseError};
 
 /// Instances of this struct define columns with aggregated values to be added
 /// to each row of the stream.
@@ -21,7 +9,6 @@ pub enum AggregatedColParseError {
 #[derive(Clone)]
 pub struct AggregatedCol {
     colname: String,
-    source: Rc<String>,
     aggregate: Box<dyn Aggregate>,
 }
 
@@ -29,10 +16,9 @@ impl AggregatedCol {
     /// Manually create an AggregatedCol by its ingredients which are the
     /// new column's name, the soure column's name and an implementor of the
     /// [Aggregate] trait.
-    pub fn new(colname: &str, source: Rc<String>, aggregate: Box<dyn Aggregate>) -> AggregatedCol {
+    pub fn new(colname: &str, aggregate: Box<dyn Aggregate>) -> AggregatedCol {
         AggregatedCol {
             colname: colname.to_string(),
-            source,
             aggregate,
         }
     }
@@ -42,11 +28,6 @@ impl AggregatedCol {
         &self.colname
     }
 
-    /// Get this aggregate's source colname
-    pub fn source(&self) -> &str {
-        &self.source
-    }
-
     /// Get this aggregate's Aggregate
     pub fn aggregate(&self) -> &Box<dyn Aggregate> {
         &self.aggregate
@@ -54,28 +35,39 @@ impl AggregatedCol {
 }
 
 impl FromStr for AggregatedCol {
-    type Err = AggregatedColParseError;
+    type Err = AggregateParseError;
 
     fn from_str(def: &str) -> Result<AggregatedCol, Self::Err> {
         let pieces: Vec<&str> = def.split(':').collect();
 
-        if pieces.len() != 3 {
-            return Err(AggregatedColParseError::WrongNumberOfParts);
+        if pieces.len() < 2 {
+            return Err(AggregateParseError::TooFewParts);
         }
-
-        let source = Rc::new(pieces[2].to_string());
 
         Ok(AggregatedCol {
             colname: pieces[0].to_string(),
             aggregate: match pieces[1] {
-                "sum" => Box::new(aggregate::Sum::new(Rc::clone(&source))),
-                "last" => Box::new(aggregate::Last::new(Rc::clone(&source))),
-                "avg" => Box::new(aggregate::Avg::new(Rc::clone(&source))),
-                "min" => Box::new(aggregate::Min::new(Rc::clone(&source))),
-                "max" => Box::new(aggregate::Max::new(Rc::clone(&source))),
-                s => return Err(AggregatedColParseError::UnknownAggregate(s.to_string())),
+                "sum" => Box::new(aggregate::Sum::new(&pieces[2..])?),
+                "last" => Box::new(aggregate::Last::new(&pieces[2..])?),
+                "avg" => Box::new(aggregate::Avg::new(&pieces[2..])?),
+                "min" => Box::new(aggregate::Min::new(&pieces[2..])?),
+                "max" => Box::new(aggregate::Max::new(&pieces[2..])?),
+                s => return Err(AggregateParseError::UnknownAggregate(s.to_string())),
             },
-            source,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AggregatedCol;
+
+    #[test]
+    fn test_parse_sum() {
+        let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.source(), "prev");
+        assert_eq!(col.aggregate().value(), "0");
     }
 }

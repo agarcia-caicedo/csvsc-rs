@@ -1,53 +1,53 @@
-use super::{Aggregate, AggregateError};
-use std::rc::Rc;
+use super::{Aggregate, AggregateParseError};
+use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
 pub struct Sum {
-    source: Rc<String>,
+    source: String,
     total: f64,
 }
 
 impl Sum {
-    pub fn new(source: Rc<String>) -> Sum {
-        Sum {
-            source,
+    pub fn new(params: &[&str]) -> Result<Sum, AggregateParseError> {
+        Ok(Sum {
+            source: match params.get(0) {
+                Some(s) => s.to_string(),
+                None => return Err(AggregateParseError::MissingParameters),
+            },
             ..Default::default()
-        }
+        })
     }
 }
 
 impl Clone for Sum {
     fn clone(&self) -> Sum {
-        Sum::new(Rc::clone(&self.source))
+        Sum::new(&[&self.source]).unwrap()
     }
 }
 
 impl Aggregate for Sum {
-    fn update(&mut self, data: &str) -> Result<(), AggregateError> {
-        match data.parse::<f64>() {
-            Ok(num) => Ok(self.total += num),
-            // FIXME think seriously about this ones
-            Err(_) => Ok(()),
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()> {
+        match headers.get_field(row, &self.source) {
+            Some(data) => match data.parse::<f64>() {
+                Ok(num) => Ok(self.total += num),
+                Err(_) => Err(()),
+            },
+            None => Err(()),
         }
     }
 
     fn value(&self) -> String {
         self.total.to_string()
     }
-
-    fn source(&self) -> &str {
-        &self.source
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Sum};
-    use std::rc::Rc;
 
     #[test]
     fn test_sum() {
-        let mut sum = Sum::new(Rc::new("".to_string()));
+        let mut sum = Sum::new(&[""]);
 
         sum.update("3.0").unwrap();
         sum.update("2").unwrap();

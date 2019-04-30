@@ -1,26 +1,29 @@
-use super::{Aggregate, AggregateError};
 use std::f64;
-use std::rc::Rc;
+use super::{Aggregate, AggregateParseError};
+use crate::{Headers, Row};
 
 #[derive(Debug)]
 pub struct Max {
-    source: Rc<String>,
+    source: String,
     current: f64,
 }
 
 impl Max {
-    pub fn new(source: Rc<String>) -> Max {
-        Max {
-            source,
+    pub fn new(params: &[&str]) -> Result<Max, AggregateParseError> {
+        Ok(Max {
+            source: match params.get(0) {
+                Some(s) => s.to_string(),
+                None => return Err(AggregateParseError::MissingParameters),
+            },
             ..Default::default()
-        }
+        })
     }
 }
 
 impl Default for Max {
     fn default() -> Max {
         Max {
-            source: Rc::new(String::new()),
+            source: String::new(),
             current: f64::NEG_INFINITY,
         }
     }
@@ -28,42 +31,39 @@ impl Default for Max {
 
 impl Clone for Max {
     fn clone(&self) -> Max {
-        Max::new(Rc::clone(&self.source))
+        Max::new(&[&self.source]).unwrap()
     }
 }
 
 impl Aggregate for Max {
-    fn update(&mut self, data: &str) -> Result<(), AggregateError> {
-        match data.parse::<f64>() {
-            Ok(num) => {
-                if num > self.current {
-                    self.current = num;
-                }
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()> {
+        match headers.get_field(row, &self.source) {
+            Some(data) => match data.parse::<f64>() {
+                Ok(num) => {
+                    if num > self.current {
+                        self.current = num;
+                    }
 
-                Ok(())
-            }
-            // FIXME think seriously about this ones
-            Err(_) => Ok(()),
+                    Ok(())
+                }
+                Err(_) => Err(()),
+            },
+            None => Err(()),
         }
     }
 
     fn value(&self) -> String {
         self.current.to_string()
     }
-
-    fn source(&self) -> &str {
-        &self.source
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Max};
-    use std::rc::Rc;
 
     #[test]
     fn test_max() {
-        let mut max = Max::new(Rc::new("".to_string()));
+        let mut max = Max::new(&[""]);
 
         max.update("3.0").unwrap();
         max.update("2").unwrap();

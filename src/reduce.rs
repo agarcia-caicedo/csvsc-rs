@@ -15,7 +15,6 @@ use aggregated_col::AggregatedCol;
 #[derive(Debug)]
 pub enum BuildError {
     GroupingKeyError(String),
-    AggregateSourceError(String),
     DuplicatedHeader(String),
 }
 
@@ -58,17 +57,8 @@ where
 
             whole_columns.push(AggregatedCol::new(
                 header,
-                Rc::clone(&source),
-                Box::new(aggregate::Last::new(Rc::clone(&source))),
+                Box::new(aggregate::Last::new(&[&source]).unwrap()),
             ));
-        }
-
-        for col in columns.iter() {
-            if !headers.contains_key(col.source()) {
-                return Err(BuildError::AggregateSourceError(
-                    col.source().to_string(),
-                ));
-            }
         }
 
         for col in columns.iter() {

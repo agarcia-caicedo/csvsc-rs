@@ -1,26 +1,29 @@
-use super::{Aggregate, AggregateError};
 use std::f64;
-use std::rc::Rc;
+use super::{Aggregate, AggregateParseError};
+use crate::{Headers, Row};
 
 #[derive(Debug)]
 pub struct Min {
-    source: Rc<String>,
+    source: String,
     current: f64,
 }
 
 impl Min {
-    pub fn new(source: Rc<String>) -> Min {
-        Min {
-            source,
+    pub fn new(params: &[&str]) -> Result<Min, AggregateParseError> {
+        Ok(Min {
+            source: match params.get(0) {
+                Some(s) => s.to_string(),
+                None => return Err(AggregateParseError::MissingParameters),
+            },
             ..Default::default()
-        }
+        })
     }
 }
 
 impl Default for Min {
     fn default() -> Min {
         Min {
-            source: Rc::new(String::new()),
+            source: String::new(),
             current: f64::INFINITY,
         }
     }
@@ -28,42 +31,39 @@ impl Default for Min {
 
 impl Clone for Min {
     fn clone(&self) -> Min {
-        Min::new(Rc::clone(&self.source))
+        Min::new(&[&self.source]).unwrap()
     }
 }
 
 impl Aggregate for Min {
-    fn update(&mut self, data: &str) -> Result<(), AggregateError> {
-        match data.parse::<f64>() {
-            Ok(num) => {
-                if num < self.current {
-                    self.current = num;
-                }
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()> {
+        match headers.get_field(row, &self.source) {
+            Some(data) => match data.parse::<f64>() {
+                Ok(num) => {
+                    if num < self.current {
+                        self.current = num;
+                    }
 
-                Ok(())
-            }
-            // FIXME think seriously about this ones
-            Err(_) => Ok(()),
+                    Ok(())
+                }
+                Err(_) => Err(()),
+            },
+            None => Err(()),
         }
     }
 
     fn value(&self) -> String {
         self.current.to_string()
     }
-
-    fn source(&self) -> &str {
-        &self.source
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{Aggregate, Min};
-    use std::rc::Rc;
 
     #[test]
     fn test_min() {
-        let mut min = Min::new(Rc::new("".to_string()));
+        let mut min = Min::new(&[""]);
 
         min.update("3.0").unwrap();
         min.update("2").unwrap();
