@@ -38,7 +38,7 @@ impl Aggregate for Avg {
                 }
                 Err(_) => Err(AggregateError::ValueError(data.to_string())),
             },
-            None => Err(AggregateError::UnexistentColumn(self.source.to_string())),
+            None => Err(AggregateError::MissingColumn(self.source.to_string())),
         }
     }
 
@@ -49,7 +49,7 @@ impl Aggregate for Avg {
 
 #[cfg(test)]
 mod tests {
-    use super::{Aggregate, Avg};
+    use super::{Aggregate, AggregateError, Avg};
     use crate::{Headers, Row};
 
     #[test]
@@ -67,5 +67,33 @@ mod tests {
         avg.update(&h, &r).unwrap();
 
         assert_eq!(avg.value(), "1.5");
+    }
+
+    #[test]
+    fn test_missing_column() {
+        let mut avg = Avg::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["b"]));
+
+        let r = Row::from(vec!["3.0"]);
+
+        match avg.update(&h, &r) {
+            Err(AggregateError::MissingColumn(val)) => assert_eq!(val, "a"),
+            Err(AggregateError::ValueError(_)) => panic!("wrong error"),
+            Ok(_) => panic!("Test failed"),
+        }
+    }
+
+    #[test]
+    fn test_value_error() {
+        let mut avg = Avg::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["a"]));
+
+        let r = Row::from(vec!["chicken"]);
+
+        match avg.update(&h, &r) {
+            Err(AggregateError::ValueError(val)) => assert_eq!(val, "chicken"),
+            Err(AggregateError::MissingColumn(_)) => panic!("wrong error"),
+            Ok(_) => panic!("Test failed"),
+        }
     }
 }

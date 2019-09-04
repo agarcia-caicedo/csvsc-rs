@@ -29,7 +29,7 @@ impl Aggregate for Last {
     fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError> {
         match headers.get_field(row, &self.source) {
             Some(data) => Ok(self.current.replace_range(.., data)),
-            None => Err(AggregateError::UnexistentColumn(self.source.to_string())),
+            None => Err(AggregateError::MissingColumn(self.source.to_string())),
         }
     }
 
@@ -40,21 +40,35 @@ impl Aggregate for Last {
 
 #[cfg(test)]
 mod tests {
-    use super::{Aggregate, Last};
+    use super::{Aggregate, AggregateError, Last};
     use crate::{Headers, Row};
 
     #[test]
     fn test_last() {
-        let mut sum = Last::new(&["a"]).unwrap();
+        let mut last = Last::new(&["a"]).unwrap();
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
-        sum.update(&h, &r).unwrap();
+        last.update(&h, &r).unwrap();
         let r = Row::from(vec!["2"]);
-        sum.update(&h, &r).unwrap();
+        last.update(&h, &r).unwrap();
         let r = Row::from(vec![".5"]);
-        sum.update(&h, &r).unwrap();
+        last.update(&h, &r).unwrap();
 
-        assert_eq!(sum.value(), ".5");
+        assert_eq!(last.value(), ".5");
+    }
+
+    #[test]
+    fn test_missing_column() {
+        let mut last = Last::new(&["a"]).unwrap();
+        let h = Headers::from_row(Row::from(vec!["b"]));
+
+        let r = Row::from(vec!["3.0"]);
+
+        match last.update(&h, &r) {
+            Err(AggregateError::MissingColumn(val)) => assert_eq!(val, "a"),
+            Err(AggregateError::ValueError(_)) => panic!("wrong error"),
+            Ok(_) => panic!("Test failed"),
+        }
     }
 }

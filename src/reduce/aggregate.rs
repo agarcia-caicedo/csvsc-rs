@@ -33,7 +33,7 @@ pub enum AggregateParseError {
 #[derive(Debug)]
 pub enum AggregateError {
     /// Specified column does not exist
-    UnexistentColumn(String),
+    MissingColumn(String),
 
     /// Could not parse value to required type
     ValueError(String),
