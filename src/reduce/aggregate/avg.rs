@@ -43,7 +43,11 @@ impl Aggregate for Avg {
     }
 
     fn value(&self) -> String {
-        (self.sum / self.count as f64).to_string()
+        if self.count != 0 {
+            (self.sum / self.count as f64).to_string()
+        } else {
+            "NaN".to_string()
+        }
     }
 }
 

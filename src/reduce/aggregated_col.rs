@@ -64,16 +64,48 @@ mod tests {
     use super::AggregatedCol;
 
     #[test]
-    fn test_parse_sum() {
-        let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
+    fn test_parse_avg() {
+        let col: AggregatedCol = "newcol:avg:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "NaN");
+    }
+
+    #[test]
+    fn test_parse_cout() {
+        let col: AggregatedCol = "newcol:count".parse().unwrap();
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "0");
     }
 
     #[test]
-    fn test_parse_cout() {
-        let col: AggregatedCol = "newcol:count".parse().unwrap();
+    fn test_parse_last() {
+        let col: AggregatedCol = "newcol:last:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "");
+    }
+
+    #[test]
+    fn test_parse_max() {
+        let col: AggregatedCol = "newcol:max:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "-inf");
+    }
+
+    #[test]
+    fn test_parse_min() {
+        let col: AggregatedCol = "newcol:min:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "inf");
+    }
+
+    #[test]
+    fn test_parse_sum() {
+        let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "0");
