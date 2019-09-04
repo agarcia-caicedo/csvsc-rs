@@ -38,21 +38,21 @@ pub trait Aggregate: AggregateClone + Debug {
 
 // https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
 pub trait AggregateClone {
-    fn clone_box(&self) -> Box<Aggregate>;
+    fn clone_box(&self) -> Box<dyn Aggregate>;
 }
 
 impl<T> AggregateClone for T
 where
     T: 'static + Aggregate + Clone,
 {
-    fn clone_box(&self) -> Box<Aggregate> {
+    fn clone_box(&self) -> Box<dyn Aggregate> {
         Box::new(self.clone())
     }
 }
 
 // We can now implement Clone manually by forwarding to clone_box.
-impl Clone for Box<Aggregate> {
-    fn clone(&self) -> Box<Aggregate> {
+impl Clone for Box<dyn Aggregate> {
+    fn clone(&self) -> Box<dyn Aggregate> {
         self.clone_box()
     }
 }
