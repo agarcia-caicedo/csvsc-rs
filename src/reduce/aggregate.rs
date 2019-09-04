@@ -30,8 +30,17 @@ pub enum AggregateParseError {
     MissingParameters,
 }
 
+#[derive(Debug)]
+pub enum AggregateError {
+    /// Specified column does not exist
+    UnexistentColumn(String),
+
+    /// Could not parse value to required type
+    ValueError(String),
+}
+
 pub trait Aggregate: AggregateClone + Debug {
-    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()>;
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError>;
 
     fn value(&self) -> String;
 }

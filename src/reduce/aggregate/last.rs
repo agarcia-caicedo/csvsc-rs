@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateParseError};
+use super::{Aggregate, AggregateError, AggregateParseError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -26,10 +26,10 @@ impl Clone for Last {
 }
 
 impl Aggregate for Last {
-    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()> {
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError> {
         match headers.get_field(row, &self.source) {
             Some(data) => Ok(self.current.replace_range(.., data)),
-            None => Err(()),
+            None => Err(AggregateError::UnexistentColumn(self.source.to_string())),
         }
     }
 

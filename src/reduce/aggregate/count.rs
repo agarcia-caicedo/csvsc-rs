@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateParseError};
+use super::{Aggregate, AggregateError, AggregateParseError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -21,7 +21,7 @@ impl Clone for Count {
 }
 
 impl Aggregate for Count {
-    fn update(&mut self, _h: &Headers, _r: &Row) -> Result<(), ()> {
+    fn update(&mut self, _h: &Headers, _r: &Row) -> Result<(), AggregateError> {
         self.total += 1;
 
         Ok(())

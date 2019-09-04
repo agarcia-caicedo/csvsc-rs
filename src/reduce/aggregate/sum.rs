@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateParseError};
+use super::{Aggregate, AggregateError, AggregateParseError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -26,13 +26,13 @@ impl Clone for Sum {
 }
 
 impl Aggregate for Sum {
-    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), ()> {
+    fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError> {
         match headers.get_field(row, &self.source) {
             Some(data) => match data.parse::<f64>() {
                 Ok(num) => Ok(self.total += num),
-                Err(_) => Err(()),
+                Err(_) => Err(AggregateError::ValueError(data.to_string())),
             },
-            None => Err(()),
+            None => Err(AggregateError::UnexistentColumn(self.source.to_string())),
         }
     }
 
