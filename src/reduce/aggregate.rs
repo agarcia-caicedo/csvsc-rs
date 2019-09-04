@@ -2,18 +2,22 @@ use std::fmt::Debug;
 use crate::{Headers, Row};
 
 mod avg;
+mod count;
+mod default_max;
+mod default_min;
 mod last;
 mod max;
 mod min;
 mod sum;
-mod count;
 
 pub use avg::Avg;
+pub use count::Count;
 pub use last::Last;
 pub use max::Max;
+pub use default_max::DefaultMax;
 pub use min::Min;
+pub use default_min::DefaultMin;
 pub use sum::Sum;
-pub use count::Count;
 
 /// Kinds of errors that could happend when creating an AggregatedCol.
 #[derive(Debug)]

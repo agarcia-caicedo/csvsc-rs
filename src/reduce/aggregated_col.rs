@@ -47,12 +47,14 @@ impl FromStr for AggregatedCol {
         Ok(AggregatedCol {
             colname: pieces[0].to_string(),
             aggregate: match pieces[1] {
-                "sum" => Box::new(aggregate::Sum::new(&pieces[2..])?),
-                "last" => Box::new(aggregate::Last::new(&pieces[2..])?),
                 "avg" => Box::new(aggregate::Avg::new(&pieces[2..])?),
-                "min" => Box::new(aggregate::Min::new(&pieces[2..])?),
-                "max" => Box::new(aggregate::Max::new(&pieces[2..])?),
                 "count" => Box::new(aggregate::Count::new(&pieces[2..])?),
+                "last" => Box::new(aggregate::Last::new(&pieces[2..])?),
+                "max" => Box::new(aggregate::Max::new(&pieces[2..])?),
+                "defaultmax" => Box::new(aggregate::DefaultMax::new(&pieces[2..])?),
+                "min" => Box::new(aggregate::Min::new(&pieces[2..])?),
+                "defaultmin" => Box::new(aggregate::DefaultMin::new(&pieces[2..])?),
+                "sum" => Box::new(aggregate::Sum::new(&pieces[2..])?),
                 s => return Err(AggregateParseError::UnknownAggregate(s.to_string())),
             },
         })
@@ -109,5 +111,21 @@ mod tests {
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "0");
+    }
+
+    #[test]
+    fn test_parse_defaultmax() {
+        let col: AggregatedCol = "newcol:defaultmax:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "-inf");
+    }
+
+    #[test]
+    fn test_parse_defaultmin() {
+        let col: AggregatedCol = "newcol:defaultmin:prev".parse().unwrap();
+
+        assert_eq!(col.colname(), "newcol");
+        assert_eq!(col.aggregate().value(), "inf");
     }
 }
