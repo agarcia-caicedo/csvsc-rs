@@ -4,10 +4,10 @@ use std::{
 };
 
 use crate::{
-    adjacent_group, add, col, add_with, error,
+    add, col, add_with, error,
 
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
-    Del, AdjacentGroup, MockStream, Rename,
+    Del, AdjacentGroup, MockStream, Rename, GroupBuildError,
 
     reduce::{self, aggregated_col::AggregatedCol},
     flush::FlushTarget,
@@ -69,7 +69,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         header_map: H,
         f: F,
         grouping: &[&str],
-    ) -> Result<AdjacentGroup<Self, F>, adjacent_group::BuildError>
+    ) -> Result<AdjacentGroup<Self, F>, GroupBuildError>
     where
         H: FnMut(Headers) -> Headers,
         F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,

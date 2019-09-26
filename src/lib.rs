@@ -77,6 +77,7 @@ archivos de salida.
 
 mod add;
 mod add_with;
+mod group;
 mod adjacent_group;
 mod del;
 mod error;
@@ -113,3 +114,9 @@ pub type Row = csv::StringRecord;
 ///
 /// Es útil en combinación con el procesador [Add](struct.Add.html).
 pub const SOURCE_FIELD: &'static str = "_source";
+
+/// Things that could go wrong while building a group or adjacent group
+#[derive(Debug)]
+pub enum GroupBuildError {
+    GroupingKeyError(String),
+}
