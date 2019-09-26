@@ -79,7 +79,6 @@ where
     headers: Headers,
     old_headers: Headers,
     current_group: Option<R::IntoIter>,
-    group_by: Vec<String>,
 }
 
 impl<F, R> Iterator for IntoIter<F, R>
@@ -90,7 +89,32 @@ where
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
+        match self.current_group.as_mut() {
+            Some(group) => match group.next() {
+                Some(item) => Some(item),
+                None => {
+                    self.current_group = None;
+
+                    self.next()
+                },
+            },
+            None => match self.iter.next() {
+                None => None,
+                Some((key, vec)) => {
+                    let output_stream = (self.f)(
+                        MockStream::new(vec.into_iter(), self.old_headers.clone())
+                    );
+
+                    if *output_stream.headers() != self.headers {
+                        return Some(Err(Error::InconsistentHeaders));
+                    }
+
+                    self.current_group = Some(output_stream.into_iter());
+
+                    self.next()
+                },
+            },
+        }
     }
 }
 
@@ -132,7 +156,6 @@ where
             f: self.f,
             headers: self.headers,
             old_headers: self.old_headers,
-            group_by: self.group_by,
             current_group: None,
         }
     }
