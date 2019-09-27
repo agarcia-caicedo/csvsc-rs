@@ -94,6 +94,7 @@ pub mod col;
 pub use add::{Add, ColSpec};
 pub use add_with::AddWith;
 pub use adjacent_group::AdjacentGroup;
+pub use group::Group;
 pub use del::Del;
 pub use error::{Error, RowResult};
 pub use flush::{Flush, FlushTarget};

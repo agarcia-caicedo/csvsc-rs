@@ -7,7 +7,7 @@ use crate::{
     add, col, add_with, error,
 
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
-    Del, AdjacentGroup, MockStream, Rename, GroupBuildError,
+    Del, Group, AdjacentGroup, MockStream, Rename, GroupBuildError,
 
     reduce::{self, aggregated_col::AggregatedCol},
     flush::FlushTarget,
@@ -77,6 +77,21 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Self: Sized,
     {
         AdjacentGroup::new(self, header_map, f, grouping)
+    }
+
+    fn group<H, F, R>(
+        self,
+        header_map: H,
+        f: F,
+        grouping: &[&str],
+    ) -> Result<Group<Self, F>, GroupBuildError>
+    where
+        H: FnMut(Headers) -> Headers,
+        F: FnMut(MockStream<vec::IntoIter<RowResult>>) -> R,
+        R: RowStream,
+        Self: Sized,
+    {
+        Group::new(self, header_map, f, grouping)
     }
 
     /// When consumed, writes to destination specified by the column given in
