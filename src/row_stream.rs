@@ -55,13 +55,12 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     /// resulting columns
     fn reduce(
         self,
-        grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
     ) -> Result<Reduce<Self>, reduce::BuildError>
     where
         Self: Sized,
     {
-        Reduce::new(self, grouping, columns)
+        Reduce::new(self, columns)
     }
 
     fn adjacent_group<H, F, R>(

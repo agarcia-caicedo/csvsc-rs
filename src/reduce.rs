@@ -14,7 +14,6 @@ use aggregated_col::AggregatedCol;
 /// Kinds of errors that can happen when building a Reduce processor.
 #[derive(Debug)]
 pub enum BuildError {
-    GroupingKeyError(String),
     DuplicatedHeader(String),
 }
 
@@ -22,7 +21,6 @@ pub enum BuildError {
 /// of rows with potentially new columns.
 pub struct Reduce<I> {
     iter: I,
-    group_by: Vec<String>,
     columns: Vec<AggregatedCol>,
     headers: Headers,
 }
@@ -36,20 +34,9 @@ where
     /// add as columns.
     pub fn new(
         iter: I,
-        grouping: Vec<&str>,
         columns: Vec<AggregatedCol>,
     ) -> Result<Reduce<I>, BuildError> {
         let mut headers = iter.headers().clone();
-        let mut group_by = Vec::with_capacity(grouping.len());
-
-        for key in grouping.iter() {
-            if !headers.contains_key(key) {
-                return Err(BuildError::GroupingKeyError(key.to_string()));
-            }
-
-            group_by.push(key.to_string());
-        }
-
         let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
 
         for header in headers.iter() {
@@ -73,26 +60,24 @@ where
 
         Ok(Reduce {
             iter,
-            group_by,
             columns: whole_columns,
             headers,
         })
     }
 }
 
-pub struct IntoIter {
-    error: Option<Error>,
-    iter: hash_map::IntoIter<u64, Group>,
+pub struct IntoIter<I> {
+    iter: I,
 }
 
-impl Iterator for IntoIter {
+impl<I> Iterator for IntoIter<I>
+where
+    I: Iterator<Item = RowResult>,
+{
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.error.take() {
-            Some(e) => Some(Err(e)),
-            None => self.iter.next().map(|g| Ok(g.1.as_row())),
-        }
+        unimplemented!()
     }
 }
 
@@ -102,42 +87,11 @@ where
 {
     type Item = RowResult;
 
-    type IntoIter = IntoIter;
+    type IntoIter = IntoIter<I::IntoIter>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let mut groups = HashMap::new();
-        let mut error: Option<Error> = None;
-        let aggregates = self.columns;
-        let headers = self.headers;
-        let iter = self.iter.into_iter();
-
-        for result in iter {
-            match result {
-                Ok(item) => {
-                    let row_hash = headers.hash(&item, &self.group_by).unwrap();
-
-                    groups
-                        .entry(row_hash)
-                        .and_modify(|group: &mut Group| {
-                            group.update(&headers, &item);
-                        })
-                        .or_insert_with(|| {
-                            let mut g = Group::from(&aggregates);
-
-                            g.update(&headers, &item);
-
-                            g
-                        });
-                }
-                Err(e) => {
-                    error.get_or_insert(e);
-                }
-            }
-        }
-
         IntoIter {
-            iter: groups.into_iter(),
-            error,
+            iter: self.iter.into_iter(),
         }
     }
 }
