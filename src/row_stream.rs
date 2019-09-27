@@ -26,11 +26,11 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     fn headers(&self) -> &Headers;
 
     /// Allows adding columns to each row of the stream.
-    fn add(self, columns: Vec<ColSpec>) -> Result<Add<Self>, add::BuildError>
+    fn add(self, column: ColSpec) -> Result<Add<Self>, add::BuildError>
     where
         Self: Sized,
     {
-        Add::new(self, columns)
+        Add::new(self, column)
     }
 
     /// Deletes the specified columns from each row of the stream

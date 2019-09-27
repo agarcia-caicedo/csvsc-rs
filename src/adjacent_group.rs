@@ -230,10 +230,10 @@ mod tests {
             }
 
             MockStream::new(rows.into_iter(), headers)
-                .add(vec![ColSpec::Mix {
+                .add(ColSpec::Mix {
                     colname: "sum".to_string(),
                     coldef: sum.to_string(),
-                }])
+                })
                 .unwrap()
         }, &["name"]).unwrap();
 
@@ -277,10 +277,10 @@ mod tests {
 
         let re = AdjacentGroup::new(iter, |headers| headers, |row_stream| {
             row_stream
-                .add(vec![ColSpec::Mix {
+                .add(ColSpec::Mix {
                     colname: "sum".to_string(),
                     coldef: "2".to_string(),
-                }])
+                })
                 .unwrap()
         }, &["name"]).unwrap();
 

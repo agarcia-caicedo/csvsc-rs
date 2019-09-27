@@ -49,10 +49,10 @@ fn main() {
                 .map(|f| ReaderSource::from_path(f).unwrap()),
             UTF_8,
         )
-        .add(vec![ColSpec::Mix {
+        .add(ColSpec::Mix {
             colname: "_target".to_string(),
             coldef: "output/{a}.csv".to_string(),
-        }]).unwrap()
+        }).unwrap()
         .del(vec!["b"])
         .flush(FlushTarget::Column("_target".to_string())).unwrap()
         .into_iter();

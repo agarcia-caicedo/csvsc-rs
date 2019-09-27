@@ -12,12 +12,12 @@ pub enum BuildError {
     DuplicatedHeader(String),
 }
 
-/// Adds multiple columns to each register. They can be based on existing ones
+/// Adds a column to each register. It can be based on existing ones
 /// or the source filename.
 #[derive(Debug)]
 pub struct Add<I> {
     iter: I,
-    columns: Vec<ColSpec>,
+    column: ColSpec,
     headers: Headers,
 }
 
@@ -25,23 +25,20 @@ impl<I> Add<I>
 where
     I: RowStream,
 {
-    pub fn new(iter: I, columns: Vec<ColSpec>) -> Result<Add<I>, BuildError> {
+    pub fn new(iter: I, column: ColSpec) -> Result<Add<I>, BuildError> {
         let mut headers = iter.headers().clone();
+        let colname = match &column {
+            ColSpec::Regex { colname, .. } => colname,
+            ColSpec::Mix { colname, .. } => colname,
+        };
 
-        for col in columns.iter() {
-            let colname = match col {
-                ColSpec::Regex { colname, .. } => colname,
-                ColSpec::Mix { colname, .. } => colname,
-            };
-
-            if let Err(_) = headers.add(colname) {
-                return Err(BuildError::DuplicatedHeader(colname.to_string()));
-            }
+        if let Err(_) = headers.add(&colname) {
+            return Err(BuildError::DuplicatedHeader(colname.to_string()));
         }
 
         Ok(Add{
             iter,
-            columns,
+            column,
             headers,
         })
     }
@@ -49,7 +46,7 @@ where
 
 pub struct IntoIter<I> {
     iter: I,
-    columns: Vec<ColSpec>,
+    column: ColSpec,
     headers: Headers,
 }
 
@@ -62,11 +59,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|result| {
             result.and_then(|mut val| {
-                for spec in self.columns.iter() {
-                    match spec.compute(&val, &self.headers) {
-                        Ok(s) => val.push_field(&s),
-                        Err(e) => return Err(Error::ColBuildError(e)),
-                    }
+                match self.column.compute(&val, &self.headers) {
+                    Ok(s) => val.push_field(&s),
+                    Err(e) => return Err(Error::ColBuildError(e)),
                 }
 
                 Ok(val)
@@ -86,7 +81,7 @@ where
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter {
             iter: self.iter.into_iter(),
-            columns: self.columns,
+            column: self.column,
             headers: self.headers,
         }
     }
@@ -127,12 +122,12 @@ mod tests {
 
         let add = Add::new(
             iter,
-            vec![ColSpec::Regex {
+            ColSpec::Regex {
                 source: "path".to_string(),
                 colname: "new".to_string(),
                 coldef: "$1".to_string(),
                 regex: Regex::new("a([0-9]+)m\\.csv$").unwrap(),
-            }],
+            },
         ).unwrap();
 
         assert_eq!(
@@ -175,10 +170,10 @@ mod tests {
 
         let add = Add::new(
             iter,
-            vec![ColSpec::Mix {
+            ColSpec::Mix {
                 colname: "b".to_string(),
                 coldef: "1".to_string(),
-            }],
+            },
         ).unwrap();
 
         assert_eq!(
