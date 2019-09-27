@@ -1,8 +1,7 @@
 use std::vec;
-use std::iter::Peekable;
 use std::collections::{HashMap, hash_map};
 use crate::{
-    RowStream, Headers, RowResult, GroupBuildError, Row,
+    RowStream, Headers, RowResult, GroupBuildError,
     mock::MockStream,
     error::Error,
 };
@@ -100,7 +99,7 @@ where
             },
             None => match self.iter.next() {
                 None => None,
-                Some((key, vec)) => {
+                Some((_, vec)) => {
                     let output_stream = (self.f)(
                         MockStream::new(vec.into_iter(), self.old_headers.clone())
                     );
@@ -221,24 +220,30 @@ mod tests {
                 .unwrap()
         }, &["name"]).unwrap();
 
+        let headers = Headers::from_row(Row::from(vec!["name", "value", "sum"]));
+
         assert_eq!(
             *re.headers(),
-            Headers::from_row(Row::from(vec!["name", "value", "sum"])),
+            headers,
         );
 
         let r = re.into_iter();
 
-        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| {
+            headers.get_field(a, "sum").unwrap().cmp(headers.get_field(b, "sum").unwrap())
+        });
 
         assert_eq!(
             results,
             vec![
+                Row::from(vec!["b", "1", "3"]),
+                Row::from(vec!["b", "1", "3"]),
+                Row::from(vec!["b", "1", "3"]),
                 Row::from(vec!["a", "1", "6"]),
                 Row::from(vec!["a", "2", "6"]),
                 Row::from(vec!["a", "3", "6"]),
-                Row::from(vec!["b", "1", "3"]),
-                Row::from(vec!["b", "1", "3"]),
-                Row::from(vec!["b", "1", "3"]),
             ]
         );
     }
@@ -282,24 +287,30 @@ mod tests {
                 .unwrap()
         }, &["name"]).unwrap();
 
+        let headers = Headers::from_row(Row::from(vec!["name", "value", "sum"]));
+
         assert_eq!(
             *re.headers(),
-            Headers::from_row(Row::from(vec!["name", "value", "sum"])),
+            headers,
         );
 
         let r = re.into_iter();
 
-        let results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+        let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
+
+        results.sort_by(|a, b| {
+            headers.get_field(a, "sum").unwrap().cmp(headers.get_field(b, "sum").unwrap())
+        });
 
         assert_eq!(
             results,
             vec![
+                Row::from(vec!["b", "1", "3"]),
+                Row::from(vec!["b", "1", "3"]),
+                Row::from(vec!["b", "1", "3"]),
                 Row::from(vec!["a", "1", "6"]),
                 Row::from(vec!["a", "2", "6"]),
                 Row::from(vec!["a", "3", "6"]),
-                Row::from(vec!["b", "1", "3"]),
-                Row::from(vec!["b", "1", "3"]),
-                Row::from(vec!["b", "1", "3"]),
             ]
         );
     }
@@ -359,22 +370,15 @@ mod tests {
             Headers::from_row(Row::from(vec!["name", "value"])),
         );
 
-        let mut r = re.into_iter();
+        // Assert that error is preserved
+        let err = re.into_iter().filter(|item| match item {
+            Err(Error::InconsistentHeaders) => true,
+            _ => false,
+        }).next().unwrap();
 
-        match r.next() {
-            Some(Ok(ref r)) if *r == Row::from(vec!["a", "1"]) => {},
+        match err {
+            Err(Error::InconsistentHeaders) => {},
             _ => unreachable!(),
-        }
-        match r.next() {
-            Some(Err(Error::InconsistentHeaders)) => {},
-            _ => unreachable!(),
-        }
-        match r.next() {
-            Some(Ok(ref r)) if *r == Row::from(vec!["b", "1"]) => {},
-            _ => unreachable!(),
-        }
-        if let Some(_) = r.next() {
-            unreachable!()
         }
     }
 }

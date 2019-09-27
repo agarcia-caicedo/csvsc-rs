@@ -14,6 +14,7 @@ pub enum BuildError {
 
 /// Adds multiple columns to each register. They can be based on existing ones
 /// or the source filename.
+#[derive(Debug)]
 pub struct Add<I> {
     iter: I,
     columns: Vec<ColSpec>,

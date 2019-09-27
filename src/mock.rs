@@ -7,6 +7,8 @@ pub enum BuildError {
     FailedHeader,
 }
 
+/// A simple struct that helps create RowStreams from vectors.
+#[derive(Debug)]
 pub struct MockStream<I> {
     iter: I,
     headers: Headers,
@@ -16,6 +18,8 @@ impl<I> MockStream<I>
 where
     I: Iterator<Item = RowResult>,
 {
+    /// Creates a new object implementing the RowStream trait from an iterator
+    /// and some headers.
     pub fn new(iter: I, headers: Headers) -> MockStream<I> {
         MockStream {
             iter,
@@ -23,6 +27,8 @@ where
         }
     }
 
+    /// Creates a new object implementing the RowStream trait from an iterator
+    /// of RowResult objects, the first of which is the header row.
     pub fn from_rows(mut iter: I) -> Result<MockStream<I>, BuildError> {
         match iter.next() {
             Some(Ok(row)) => Ok(MockStream::new(iter, Headers::from_row(row))),

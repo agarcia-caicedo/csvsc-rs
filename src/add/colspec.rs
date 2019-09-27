@@ -17,6 +17,7 @@ pub enum ColSpecParseError {
 }
 
 /// Tipos de especificaciones disponibles para crear una nueva columna.
+#[derive(Debug)]
 pub enum ColSpec {
     /// Construye una nueva columna basándose en una columna anterior, usando
     /// una expresión regular para extraer información de la misma.
