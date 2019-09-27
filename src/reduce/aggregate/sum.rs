@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -8,20 +8,17 @@ pub struct Sum {
 }
 
 impl Sum {
-    pub fn new(params: &[&str]) -> Result<Sum, AggregateParseError> {
-        Ok(Sum {
-            source: match params.get(0) {
-                Some(s) => s.to_string(),
-                None => return Err(AggregateParseError::MissingParameters),
-            },
+    pub fn new(source: &str) -> Sum {
+        Sum {
+            source: source.to_string(),
             ..Default::default()
-        })
+        }
     }
 }
 
 impl Clone for Sum {
     fn clone(&self) -> Sum {
-        Sum::new(&[&self.source]).unwrap()
+        Sum::new(&self.source)
     }
 }
 
@@ -48,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_sum() {
-        let mut sum = Sum::new(&["a"]).unwrap();
+        let mut sum = Sum::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -63,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut sum = Sum::new(&["a"]).unwrap();
+        let mut sum = Sum::new("a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -77,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut sum = Sum::new(&["a"]).unwrap();
+        let mut sum = Sum::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

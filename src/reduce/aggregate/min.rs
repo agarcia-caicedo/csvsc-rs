@@ -1,5 +1,5 @@
 use std::f64;
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Debug)]
@@ -9,14 +9,11 @@ pub struct Min {
 }
 
 impl Min {
-    pub fn new(params: &[&str]) -> Result<Min, AggregateParseError> {
-        Ok(Min {
-            source: match params.get(0) {
-                Some(s) => s.to_string(),
-                None => return Err(AggregateParseError::MissingParameters),
-            },
+    pub fn new(source: &str) -> Min {
+        Min {
+            source: source.to_string(),
             ..Default::default()
-        })
+        }
     }
 }
 
@@ -31,7 +28,7 @@ impl Default for Min {
 
 impl Clone for Min {
     fn clone(&self) -> Min {
-        Min::new(&[&self.source]).unwrap()
+        Min::new(&self.source)
     }
 }
 
@@ -64,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_min() {
-        let mut min = Min::new(&["a"]).unwrap();
+        let mut min = Min::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -79,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut min = Min::new(&["a"]).unwrap();
+        let mut min = Min::new("a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -93,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut min = Min::new(&["a"]).unwrap();
+        let mut min = Min::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

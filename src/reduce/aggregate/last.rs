@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -8,20 +8,17 @@ pub struct Last {
 }
 
 impl Last {
-    pub fn new(params: &[&str]) -> Result<Last, AggregateParseError> {
-        Ok(Last {
-            source: match params.get(0) {
-                Some(s) => s.to_string(),
-                None => return Err(AggregateParseError::MissingParameters),
-            },
+    pub fn new(source: &str) -> Last {
+        Last {
+            source: source.to_string(),
             ..Default::default()
-        })
+        }
     }
 }
 
 impl Clone for Last {
     fn clone(&self) -> Last {
-        Last::new(&[&self.source]).unwrap()
+        Last::new(&self.source)
     }
 }
 
@@ -45,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_last() {
-        let mut last = Last::new(&["a"]).unwrap();
+        let mut last = Last::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -60,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut last = Last::new(&["a"]).unwrap();
+        let mut last = Last::new("a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);

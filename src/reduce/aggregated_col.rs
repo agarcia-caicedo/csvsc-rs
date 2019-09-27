@@ -1,5 +1,4 @@
-use std::str::FromStr;
-use super::aggregate::{self, Aggregate, AggregateParseError};
+use super::aggregate::Aggregate;
 
 /// Instances of this struct define columns with aggregated values to be added
 /// to each row of the stream.
@@ -34,40 +33,16 @@ impl AggregatedCol {
     }
 }
 
-impl FromStr for AggregatedCol {
-    type Err = AggregateParseError;
-
-    fn from_str(def: &str) -> Result<AggregatedCol, Self::Err> {
-        let pieces: Vec<&str> = def.split(':').collect();
-
-        if pieces.len() < 2 {
-            return Err(AggregateParseError::TooFewParts);
-        }
-
-        Ok(AggregatedCol {
-            colname: pieces[0].to_string(),
-            aggregate: match pieces[1] {
-                "avg" => Box::new(aggregate::Avg::new(&pieces[2..])?),
-                "count" => Box::new(aggregate::Count::new(&pieces[2..])?),
-                "last" => Box::new(aggregate::Last::new(&pieces[2..])?),
-                "max" => Box::new(aggregate::Max::new(&pieces[2..])?),
-                "defaultmax" => Box::new(aggregate::DefaultMax::new(&pieces[2..])?),
-                "min" => Box::new(aggregate::Min::new(&pieces[2..])?),
-                "defaultmin" => Box::new(aggregate::DefaultMin::new(&pieces[2..])?),
-                "sum" => Box::new(aggregate::Sum::new(&pieces[2..])?),
-                s => return Err(AggregateParseError::UnknownAggregate(s.to_string())),
-            },
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::AggregatedCol;
+    use crate::aggregate::{
+        Avg, Min, Max, DefaultMin, DefaultMax, Count, Last, Sum,
+    };
 
     #[test]
     fn test_parse_avg() {
-        let col: AggregatedCol = "newcol:avg:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Avg::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "NaN");
@@ -75,7 +50,7 @@ mod tests {
 
     #[test]
     fn test_parse_cout() {
-        let col: AggregatedCol = "newcol:count".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Count::new()));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "0");
@@ -83,7 +58,7 @@ mod tests {
 
     #[test]
     fn test_parse_last() {
-        let col: AggregatedCol = "newcol:last:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Last::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "");
@@ -91,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_parse_max() {
-        let col: AggregatedCol = "newcol:max:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Max::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "-inf");
@@ -99,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_parse_min() {
-        let col: AggregatedCol = "newcol:min:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Min::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "inf");
@@ -107,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_parse_sum() {
-        let col: AggregatedCol = "newcol:sum:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(Sum::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "0");
@@ -115,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_parse_defaultmax() {
-        let col: AggregatedCol = "newcol:defaultmax:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(DefaultMax::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "-inf");
@@ -123,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_parse_defaultmin() {
-        let col: AggregatedCol = "newcol:defaultmin:prev".parse().unwrap();
+        let col = AggregatedCol::new("newcol", Box::new(DefaultMin::new("prev")));
 
         assert_eq!(col.colname(), "newcol");
         assert_eq!(col.aggregate().value(), "inf");

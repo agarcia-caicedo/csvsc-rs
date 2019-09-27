@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -7,16 +7,16 @@ pub struct Count {
 }
 
 impl Count {
-    pub fn new(_params: &[&str]) -> Result<Count, AggregateParseError> {
-        Ok(Count {
+    pub fn new() -> Count {
+        Count {
             ..Default::default()
-        })
+        }
     }
 }
 
 impl Clone for Count {
     fn clone(&self) -> Count {
-        Count::new(&[]).unwrap()
+        Count::new()
     }
 }
 
@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn test_count() {
-        let mut count = Count::new(&[""]).unwrap();
+        let mut count = Count::new();
         let h = Headers::from_row(Row::new());
         let r = Row::new();
 

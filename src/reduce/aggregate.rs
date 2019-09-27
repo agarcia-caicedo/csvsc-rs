@@ -19,21 +19,6 @@ pub use min::Min;
 pub use default_min::DefaultMin;
 pub use sum::Sum;
 
-/// Kinds of errors that could happend when creating an AggregatedCol.
-#[derive(Debug)]
-pub enum AggregateParseError {
-    /// Aggregates need at least the new column name and aggregate type to be
-    /// parsed.
-    TooFewParts,
-
-    /// The given aggregate is not in the known list
-    UnknownAggregate(String),
-
-    /// Some Aggregates need parameters like the source column, this error
-    /// indicates that some where missing
-    MissingParameters,
-}
-
 #[derive(Debug)]
 pub enum AggregateError {
     /// Specified column does not exist

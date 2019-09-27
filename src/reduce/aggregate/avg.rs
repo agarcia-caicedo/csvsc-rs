@@ -1,4 +1,4 @@
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Default, Debug)]
@@ -9,20 +9,17 @@ pub struct Avg {
 }
 
 impl Avg {
-    pub fn new(params: &[&str]) -> Result<Avg, AggregateParseError> {
-        Ok(Avg {
-            source: match params.get(0) {
-                Some(s) => s.to_string(),
-                None => return Err(AggregateParseError::MissingParameters),
-            },
+    pub fn new(source: &str) -> Avg {
+        Avg {
+            source: source.to_string(),
             ..Default::default()
-        })
+        }
     }
 }
 
 impl Clone for Avg {
     fn clone(&self) -> Avg {
-        Avg::new(&[&self.source]).unwrap()
+        Avg::new(&self.source)
     }
 }
 
@@ -58,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_avg() {
-        let mut avg = Avg::new(&["a"]).unwrap();
+        let mut avg = Avg::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -75,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut avg = Avg::new(&["a"]).unwrap();
+        let mut avg = Avg::new("a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -89,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut avg = Avg::new(&["a"]).unwrap();
+        let mut avg = Avg::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

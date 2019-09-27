@@ -8,7 +8,7 @@ pub mod aggregated_col;
 
 use aggregate::Aggregate;
 use group::Group;
-use aggregated_col::AggregatedCol;
+pub use aggregated_col::AggregatedCol;
 
 /// Kinds of errors that can happen when building a Reduce processor.
 #[derive(Debug)]
@@ -43,7 +43,7 @@ where
 
             whole_columns.push(AggregatedCol::new(
                 header,
-                Box::new(aggregate::Last::new(&[&source]).unwrap()),
+                Box::new(aggregate::Last::new(&source)),
             ));
         }
 
@@ -116,7 +116,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reduce};
+    use super::{Reduce, aggregate::{Avg, Sum, Max, Min}, AggregatedCol};
     use crate::{Row, Error, col, mock::MockStream};
 
     #[test]
@@ -161,7 +161,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["new:avg:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Avg::new("b")))])
             .unwrap()
             .into_iter();
 
@@ -191,7 +191,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["new:min:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Min::new("b")))])
             .unwrap()
             .into_iter();
 
@@ -221,7 +221,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["new:max:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Max::new("b")))])
             .unwrap()
             .into_iter();
 
@@ -251,7 +251,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["new:sum:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Sum::new("b")))])
             .unwrap()
             .into_iter();
 
@@ -282,7 +282,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut r = Reduce::new(iter, vec!["new:sum:b".parse().unwrap()])
+        let mut r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Sum::new("b")))])
             .unwrap()
             .into_iter();
 

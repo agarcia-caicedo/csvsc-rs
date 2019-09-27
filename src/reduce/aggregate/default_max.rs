@@ -1,5 +1,5 @@
 use std::f64;
-use super::{Aggregate, AggregateError, AggregateParseError};
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 #[derive(Debug)]
@@ -9,14 +9,11 @@ pub struct DefaultMax {
 }
 
 impl DefaultMax {
-    pub fn new(params: &[&str]) -> Result<DefaultMax, AggregateParseError> {
-        Ok(DefaultMax {
-            source: match params.get(0) {
-                Some(s) => s.to_string(),
-                None => return Err(AggregateParseError::MissingParameters),
-            },
+    pub fn new(source: &str) -> DefaultMax {
+        DefaultMax {
+            source: source.to_string(),
             ..Default::default()
-        })
+        }
     }
 }
 
@@ -31,7 +28,7 @@ impl Default for DefaultMax {
 
 impl Clone for DefaultMax {
     fn clone(&self) -> DefaultMax {
-        DefaultMax::new(&[&self.source]).unwrap()
+        DefaultMax::new(&self.source)
     }
 }
 
@@ -64,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_max() {
-        let mut max = DefaultMax::new(&["a"]).unwrap();
+        let mut max = DefaultMax::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -79,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut max = DefaultMax::new(&["a"]).unwrap();
+        let mut max = DefaultMax::new("a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -90,7 +87,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut max = DefaultMax::new(&["a"]).unwrap();
+        let mut max = DefaultMax::new("a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);
