@@ -28,29 +28,14 @@ pub enum AggregateError {
     ValueError(String),
 }
 
-pub trait Aggregate: AggregateClone + Debug {
+/// Aggregates used while reducing must implement this trait.
+pub trait Aggregate: Debug {
+    /// Updates the current value with the next row of data.
     fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError>;
 
+    /// Gets the current value.
     fn value(&self) -> String;
-}
 
-// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object
-pub trait AggregateClone {
-    fn clone_box(&self) -> Box<dyn Aggregate>;
-}
-
-impl<T> AggregateClone for T
-where
-    T: 'static + Aggregate + Clone,
-{
-    fn clone_box(&self) -> Box<dyn Aggregate> {
-        Box::new(self.clone())
-    }
-}
-
-// We can now implement Clone manually by forwarding to clone_box.
-impl Clone for Box<dyn Aggregate> {
-    fn clone(&self) -> Box<dyn Aggregate> {
-        self.clone_box()
-    }
+    /// Gets this aggregate's colname
+    fn colname(&self) -> &str;
 }

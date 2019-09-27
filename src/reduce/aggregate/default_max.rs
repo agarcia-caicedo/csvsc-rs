@@ -6,12 +6,14 @@ use crate::{Headers, Row};
 pub struct DefaultMax {
     source: String,
     current: f64,
+    colname: String,
 }
 
 impl DefaultMax {
-    pub fn new(source: &str) -> DefaultMax {
+    pub fn new(colname: &str, source: &str) -> DefaultMax {
         DefaultMax {
             source: source.to_string(),
+            colname: colname.to_string(),
             ..Default::default()
         }
     }
@@ -20,15 +22,10 @@ impl DefaultMax {
 impl Default for DefaultMax {
     fn default() -> DefaultMax {
         DefaultMax {
+            colname: String::new(),
             source: String::new(),
             current: f64::NEG_INFINITY,
         }
-    }
-}
-
-impl Clone for DefaultMax {
-    fn clone(&self) -> DefaultMax {
-        DefaultMax::new(&self.source)
     }
 }
 
@@ -52,6 +49,10 @@ impl Aggregate for DefaultMax {
     fn value(&self) -> String {
         self.current.to_string()
     }
+
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 }
 
 #[cfg(test)]
@@ -61,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_max() {
-        let mut max = DefaultMax::new("a");
+        let mut max = DefaultMax::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -76,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut max = DefaultMax::new("a");
+        let mut max = DefaultMax::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut max = DefaultMax::new("a");
+        let mut max = DefaultMax::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

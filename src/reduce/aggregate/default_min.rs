@@ -6,12 +6,14 @@ use crate::{Headers, Row};
 pub struct DefaultMin {
     source: String,
     current: f64,
+    colname: String,
 }
 
 impl DefaultMin {
-    pub fn new(source: &str) -> DefaultMin {
+    pub fn new(colname: &str, source: &str) -> DefaultMin {
         DefaultMin {
             source: source.to_string(),
+            colname: colname.to_string(),
             ..Default::default()
         }
     }
@@ -20,15 +22,10 @@ impl DefaultMin {
 impl Default for DefaultMin {
     fn default() -> DefaultMin {
         DefaultMin {
+            colname: String::new(),
             source: String::new(),
             current: f64::INFINITY,
         }
-    }
-}
-
-impl Clone for DefaultMin {
-    fn clone(&self) -> DefaultMin {
-        DefaultMin::new(&self.source)
     }
 }
 
@@ -52,6 +49,10 @@ impl Aggregate for DefaultMin {
     fn value(&self) -> String {
         self.current.to_string()
     }
+
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 }
 
 #[cfg(test)]
@@ -61,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_min() {
-        let mut min = DefaultMin::new("a");
+        let mut min = DefaultMin::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -76,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut min = DefaultMin::new("a");
+        let mut min = DefaultMin::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut min = DefaultMin::new("a");
+        let mut min = DefaultMin::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

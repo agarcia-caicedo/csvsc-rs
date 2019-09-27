@@ -4,12 +4,12 @@ use std::{
 };
 
 use crate::{
-    add, col, add_with, error,
+    add, col, add_with, error, reduce,
 
     Add, ColSpec, Flush, Headers, Inspect, Reduce, Row, RowResult, AddWith,
     Del, Group, AdjacentGroup, MockStream, Rename, GroupBuildError,
 
-    reduce::{self, aggregated_col::AggregatedCol},
+    aggregate::Aggregate,
     flush::FlushTarget,
 };
 
@@ -55,7 +55,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
     /// resulting columns
     fn reduce(
         self,
-        columns: Vec<AggregatedCol>,
+        columns: Vec<Box<dyn Aggregate>>,
     ) -> Result<Reduce<Self>, reduce::BuildError>
     where
         Self: Sized,

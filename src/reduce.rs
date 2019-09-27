@@ -4,11 +4,9 @@ use std::vec;
 
 pub mod aggregate;
 pub mod group;
-pub mod aggregated_col;
 
 use aggregate::Aggregate;
 use group::Group;
-pub use aggregated_col::AggregatedCol;
 
 /// Kinds of errors that can happen when building a Reduce processor.
 #[derive(Debug)]
@@ -20,7 +18,7 @@ pub enum BuildError {
 /// of rows with potentially new columns.
 pub struct Reduce<I> {
     iter: I,
-    columns: Vec<AggregatedCol>,
+    columns: Vec<Box<dyn Aggregate>>,
     headers: Headers,
 }
 
@@ -33,18 +31,15 @@ where
     /// add as columns.
     pub fn new(
         iter: I,
-        columns: Vec<AggregatedCol>,
+        columns: Vec<Box<dyn Aggregate>>,
     ) -> Result<Reduce<I>, BuildError> {
         let mut headers = iter.headers().clone();
-        let mut whole_columns = Vec::with_capacity(headers.len() + columns.len());
+        let mut whole_columns: Vec<Box<dyn Aggregate>> = Vec::with_capacity(headers.len() + columns.len());
 
         for header in headers.iter() {
             let source = Rc::new(header.to_string());
 
-            whole_columns.push(AggregatedCol::new(
-                header,
-                Box::new(aggregate::Last::new(&source)),
-            ));
+            whole_columns.push(Box::new(aggregate::Last::new(header, &source)));
         }
 
         for col in columns.iter() {
@@ -88,7 +83,7 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         let mut errors = vec![];
-        let mut onlygroup = Group::from(&self.columns);
+        let mut onlygroup = Group::from(self.columns);
 
         for item in self.iter {
             match item {
@@ -116,7 +111,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Reduce, aggregate::{Avg, Sum, Max, Min}, AggregatedCol};
+    use super::{Reduce, aggregate::{Avg, Sum, Max, Min}};
     use crate::{Row, Error, col, mock::MockStream};
 
     #[test]
@@ -161,7 +156,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Avg::new("b")))])
+        let r = Reduce::new(iter, vec![Box::new(Avg::new("new", "b"))])
             .unwrap()
             .into_iter();
 
@@ -191,7 +186,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Min::new("b")))])
+        let r = Reduce::new(iter, vec![Box::new(Min::new("new", "b"))])
             .unwrap()
             .into_iter();
 
@@ -221,7 +216,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Max::new("b")))])
+        let r = Reduce::new(iter, vec![Box::new(Max::new("new", "b"))])
             .unwrap()
             .into_iter();
 
@@ -251,7 +246,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Sum::new("b")))])
+        let r = Reduce::new(iter, vec![Box::new(Sum::new("new", "b"))])
             .unwrap()
             .into_iter();
 
@@ -282,7 +277,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut r = Reduce::new(iter, vec![AggregatedCol::new("new", Box::new(Sum::new("b")))])
+        let mut r = Reduce::new(iter, vec![Box::new(Sum::new("new", "b"))])
             .unwrap()
             .into_iter();
 

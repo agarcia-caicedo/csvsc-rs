@@ -1,4 +1,4 @@
-use super::{Aggregate, aggregated_col::AggregatedCol};
+use super::Aggregate;
 use crate::{Headers, Row};
 
 pub struct Group {
@@ -27,14 +27,8 @@ impl Group {
     }
 }
 
-impl<'a> From<&'a Vec<AggregatedCol>> for Group {
-    fn from(row: &'a Vec<AggregatedCol>) -> Group {
-        let mut contents = Vec::with_capacity(row.len());
-
-        for item in row {
-            contents.push((*item.aggregate()).clone());
-        }
-
+impl<'a> From<Vec<Box<dyn Aggregate>>> for Group {
+    fn from(contents: Vec<Box<dyn Aggregate>>) -> Group {
         Group { contents }
     }
 }

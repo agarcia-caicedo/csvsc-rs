@@ -5,20 +5,16 @@ use crate::{Headers, Row};
 pub struct Sum {
     source: String,
     total: f64,
+    colname: String,
 }
 
 impl Sum {
-    pub fn new(source: &str) -> Sum {
+    pub fn new(colname: &str, source: &str) -> Sum {
         Sum {
             source: source.to_string(),
+            colname: colname.to_string(),
             ..Default::default()
         }
-    }
-}
-
-impl Clone for Sum {
-    fn clone(&self) -> Sum {
-        Sum::new(&self.source)
     }
 }
 
@@ -36,6 +32,10 @@ impl Aggregate for Sum {
     fn value(&self) -> String {
         self.total.to_string()
     }
+
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 }
 
 #[cfg(test)]
@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_sum() {
-        let mut sum = Sum::new("a");
+        let mut sum = Sum::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut sum = Sum::new("a");
+        let mut sum = Sum::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut sum = Sum::new("a");
+        let mut sum = Sum::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

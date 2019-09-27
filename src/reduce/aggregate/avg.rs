@@ -4,22 +4,18 @@ use crate::{Headers, Row};
 #[derive(Default, Debug)]
 pub struct Avg {
     source: String,
+    colname: String,
     sum: f64,
     count: u64,
 }
 
 impl Avg {
-    pub fn new(source: &str) -> Avg {
+    pub fn new(colname: &str, source: &str) -> Avg {
         Avg {
             source: source.to_string(),
+            colname: colname.to_string(),
             ..Default::default()
         }
-    }
-}
-
-impl Clone for Avg {
-    fn clone(&self) -> Avg {
-        Avg::new(&self.source)
     }
 }
 
@@ -46,6 +42,10 @@ impl Aggregate for Avg {
             "NaN".to_string()
         }
     }
+
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 }
 
 #[cfg(test)]
@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_avg() {
-        let mut avg = Avg::new("a");
+        let mut avg = Avg::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut avg = Avg::new("a");
+        let mut avg = Avg::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_value_error() {
-        let mut avg = Avg::new("a");
+        let mut avg = Avg::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["chicken"]);

@@ -5,20 +5,16 @@ use crate::{Headers, Row};
 pub struct Last {
     source: String,
     current: String,
+    colname: String,
 }
 
 impl Last {
-    pub fn new(source: &str) -> Last {
+    pub fn new(colname: &str, source: &str) -> Last {
         Last {
             source: source.to_string(),
+            colname: colname.to_string(),
             ..Default::default()
         }
-    }
-}
-
-impl Clone for Last {
-    fn clone(&self) -> Last {
-        Last::new(&self.source)
     }
 }
 
@@ -33,6 +29,10 @@ impl Aggregate for Last {
     fn value(&self) -> String {
         self.current.clone()
     }
+
+    fn colname(&self) -> &str {
+        &self.colname
+    }
 }
 
 #[cfg(test)]
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_last() {
-        let mut last = Last::new("a");
+        let mut last = Last::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["a"]));
 
         let r = Row::from(vec!["3.0"]);
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_missing_column() {
-        let mut last = Last::new("a");
+        let mut last = Last::new("new", "a");
         let h = Headers::from_row(Row::from(vec!["b"]));
 
         let r = Row::from(vec!["3.0"]);
