@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::result;
 
-use crate::{Row, col};
+use crate::{Row, col, aggregate::AggregateError};
 
 /// An error found somewhere in the transformation chain.
 #[derive(Debug)]
@@ -13,6 +13,7 @@ pub enum Error {
     InconsistentSizeOfRows(PathBuf),
     ColBuildError(col::BuildError),
     ColumnNotFound(String),
+    AggregateError(AggregateError),
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -35,6 +36,7 @@ impl std::error::Error for Error {
             Error::InconsistentHeaders => "inconsistent headers among files",
             Error::ColBuildError(_) => "Error building a column",
             Error::ColumnNotFound(_) => "Requested unexisten column",
+            Error::AggregateError(_) => "Aggregation error during process",
         }
     }
 }
@@ -51,6 +53,7 @@ impl std::fmt::Display for Error {
             }
             Error::ColBuildError(ref c) => write!(f, "Could not build column with reason: {:?}", c),
             Error::ColumnNotFound(ref c) => write!(f, "Requested column that was not found: {}", c),
+            Error::AggregateError(ref c) => write!(f, "Column aggregation failed: {:?}", c),
         }
     }
 }

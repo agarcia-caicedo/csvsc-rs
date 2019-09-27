@@ -1,4 +1,4 @@
-use super::Aggregate;
+use super::{Aggregate, AggregateError};
 use crate::{Headers, Row};
 
 pub struct Group {
@@ -6,12 +6,12 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn update(&mut self, headers: &Headers, row: &Row) {
+    pub fn update(&mut self, headers: &Headers, row: &Row) -> Result<(), AggregateError> {
         for agg in self.contents.iter_mut() {
-            // TODO remove expect here
-            agg.update(headers, row)
-                .expect("could not update");
+            agg.update(headers, row)?
         }
+
+        Ok(())
     }
 
     pub fn as_row(self) -> Row {

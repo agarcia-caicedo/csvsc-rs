@@ -1,11 +1,11 @@
-use crate::{Headers, RowResult, RowStream};
+use crate::{Headers, RowResult, RowStream, Error};
 use std::rc::Rc;
 use std::vec;
 
 pub mod aggregate;
 pub mod group;
 
-use aggregate::Aggregate;
+use aggregate::{Aggregate, AggregateError};
 use group::Group;
 
 /// Kinds of errors that can happen when building a Reduce processor.
@@ -87,7 +87,10 @@ where
 
         for item in self.iter {
             match item {
-                Ok(row) => onlygroup.update(&self.headers, &row),
+                Ok(row) => match onlygroup.update(&self.headers, &row) {
+                    Err(e) => errors.push(Err(Error::AggregateError(e))),
+                    _ => {},
+                },
                 Err(e) => errors.push(Err(e)),
             }
         }
