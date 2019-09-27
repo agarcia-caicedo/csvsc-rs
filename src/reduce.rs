@@ -1,7 +1,6 @@
-use crate::{Error, Headers, RowResult, RowStream};
-use std::collections::hash_map;
-use std::collections::HashMap;
+use crate::{Headers, RowResult, RowStream};
 use std::rc::Rc;
+use std::vec;
 
 pub mod aggregate;
 pub mod group;
@@ -66,18 +65,16 @@ where
     }
 }
 
-pub struct IntoIter<I> {
-    iter: I,
+pub struct IntoIter {
+    iter: vec::IntoIter<RowResult>,
 }
 
-impl<I> Iterator for IntoIter<I>
-where
-    I: Iterator<Item = RowResult>,
+impl Iterator for IntoIter
 {
     type Item = RowResult;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!()
+        self.iter.next()
     }
 }
 
@@ -87,11 +84,23 @@ where
 {
     type Item = RowResult;
 
-    type IntoIter = IntoIter<I::IntoIter>;
+    type IntoIter = IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
+        let mut errors = vec![];
+        let mut onlygroup = Group::from(&self.columns);
+
+        for item in self.iter {
+            match item {
+                Ok(row) => onlygroup.update(&self.headers, &row),
+                Err(e) => errors.push(Err(e)),
+            }
+        }
+
+        errors.push(Ok(onlygroup.as_row()));
+
         IntoIter {
-            iter: self.iter.into_iter(),
+            iter: errors.into_iter(),
         }
     }
 }
@@ -107,8 +116,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Error, Reduce};
-    use crate::{Row, col, mock::MockStream};
+    use super::{Reduce};
+    use crate::{Row, Error, col, mock::MockStream};
 
     #[test]
     fn test_reduce_id_function() {
@@ -123,7 +132,7 @@ mod tests {
         )
         .unwrap();
 
-        let re = Reduce::new(iter, Vec::new(), Vec::new()).unwrap();
+        let re = Reduce::new(iter, Vec::new()).unwrap();
         let r = re.into_iter();
 
         let mut results: Vec<Row> = r.map(|i| i.unwrap()).collect();
@@ -133,8 +142,6 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["a", "a"]),
-                Row::from(vec!["b", "a"]),
                 Row::from(vec!["c", "a"]),
             ]
         );
@@ -154,7 +161,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["a"], vec!["new:avg:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["new:avg:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -165,8 +172,7 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["1", "4", "3"]),
-                Row::from(vec!["2", "9", "8"]),
+                Row::from(vec!["2", "9", "5.5"]),
             ]
         );
     }
@@ -185,7 +191,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["a"], vec!["new:min:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["new:min:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -196,8 +202,7 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["1", "4", "2"]),
-                Row::from(vec!["2", "9", "7"]),
+                Row::from(vec!["2", "9", "2"]),
             ]
         );
     }
@@ -216,7 +221,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["a"], vec!["new:max:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["new:max:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -227,7 +232,6 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["1", "4", "4"]),
                 Row::from(vec!["2", "9", "9"]),
             ]
         );
@@ -247,7 +251,7 @@ mod tests {
         )
         .unwrap();
 
-        let r = Reduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+        let r = Reduce::new(iter, vec!["new:sum:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -258,8 +262,7 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["1", "4", "6"]),
-                Row::from(vec!["2", "9", "16"]),
+                Row::from(vec!["2", "9", "22"]),
             ]
         );
     }
@@ -279,7 +282,7 @@ mod tests {
         )
         .unwrap();
 
-        let mut r = Reduce::new(iter, vec!["a"], vec!["new:sum:b".parse().unwrap()])
+        let mut r = Reduce::new(iter, vec!["new:sum:b".parse().unwrap()])
             .unwrap()
             .into_iter();
 
@@ -295,8 +298,7 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                Row::from(vec!["1", "4", "6"]),
-                Row::from(vec!["2", "9", "16"]),
+                Row::from(vec!["2", "9", "22"]),
             ]
         );
     }
