@@ -103,12 +103,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Add, RowStream};
+    use super::{Add, RowStream, ColSpec};
     use crate::{
         Row, Headers,
         mock::MockStream,
         error::Error,
     };
+    use regex::Regex;
 
     #[test]
     fn test_add() {
@@ -126,7 +127,12 @@ mod tests {
 
         let add = Add::new(
             iter,
-            vec!["regex:path:new:$1:a([0-9]+)m\\.csv$".parse().unwrap()],
+            vec![ColSpec::Regex {
+                source: "path".to_string(),
+                colname: "new".to_string(),
+                coldef: "$1".to_string(),
+                regex: Regex::new("a([0-9]+)m\\.csv$").unwrap(),
+            }],
         ).unwrap();
 
         assert_eq!(
@@ -169,7 +175,10 @@ mod tests {
 
         let add = Add::new(
             iter,
-            vec!["value:b:1".parse().unwrap()],
+            vec![ColSpec::Mix {
+                colname: "b".to_string(),
+                coldef: "1".to_string(),
+            }],
         ).unwrap();
 
         assert_eq!(

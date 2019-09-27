@@ -1,20 +1,7 @@
 use strfmt::{strfmt_map, FmtError, Formatter};
 use regex::{Captures, Regex};
-use std::str::FromStr;
 
 use crate::{col, Row, Headers};
-
-/// Clases de errores que pueden pasar al interpretar la especificación de
-/// cómo construir una nueva columna.
-#[derive(Debug)]
-pub enum ColSpecParseError {
-    MissingSource,
-    MissingColname,
-    MissingColDef,
-    MissingRegex,
-    InvalidRegex,
-    InvalidSpec,
-}
 
 /// Tipos de especificaciones disponibles para crear una nueva columna.
 #[derive(Debug)]
@@ -22,7 +9,7 @@ pub enum ColSpec {
     /// Construye una nueva columna basándose en una columna anterior, usando
     /// una expresión regular para extraer información de la misma.
     Regex {
-        source: String,
+        source: String, // TODO replace this and other ones with &str
         colname: String,
         coldef: String,
         regex: Regex,
@@ -84,79 +71,6 @@ impl ColSpec {
     }
 }
 
-impl FromStr for ColSpec {
-    type Err = ColSpecParseError;
-
-    fn from_str(spec: &str) -> Result<ColSpec, Self::Err> {
-        if spec.starts_with("regex:") {
-            let mut pieces = spec.split(':');
-            pieces.next();
-
-            let source;
-            let colname;
-            let coldef;
-            let regex;
-
-            if let Some(s) = pieces.next() {
-                source = s.to_string();
-            } else {
-                return Err(ColSpecParseError::MissingSource);
-            }
-
-            if let Some(s) = pieces.next() {
-                colname = s.to_string();
-            } else {
-                return Err(ColSpecParseError::MissingColname);
-            }
-
-            if let Some(s) = pieces.next() {
-                coldef = s.to_string();
-            } else {
-                return Err(ColSpecParseError::MissingColDef);
-            }
-
-            if let Some(s) = pieces.next() {
-                if let Ok(r) = Regex::new(s) {
-                    regex = r;
-                } else {
-                    return Err(ColSpecParseError::InvalidRegex);
-                }
-            } else {
-                return Err(ColSpecParseError::MissingRegex);
-            }
-
-            Ok(ColSpec::Regex {
-                source,
-                colname,
-                coldef,
-                regex,
-            })
-        } else if spec.starts_with("value:") {
-            let mut pieces = spec.split(':');
-            pieces.next();
-
-            let colname;
-            let coldef;
-
-            if let Some(s) = pieces.next() {
-                colname = s.to_string();
-            } else {
-                return Err(ColSpecParseError::MissingColname);
-            }
-
-            if let Some(s) = pieces.next() {
-                coldef = s.to_string();
-            } else {
-                return Err(ColSpecParseError::MissingColDef);
-            }
-
-            Ok(ColSpec::Mix { colname, coldef })
-        } else {
-            Err(ColSpecParseError::InvalidSpec)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use regex::Regex;
@@ -165,7 +79,10 @@ mod tests {
 
     #[test]
     fn test_colspec_simplest() {
-        let c: ColSpec = "value:new:value".parse().unwrap();
+        let c: ColSpec = ColSpec::Mix {
+            colname: "new".to_string(),
+            coldef: "value".to_string(),
+        };
         let data = Row::new();
 
         assert_eq!(
@@ -177,9 +94,12 @@ mod tests {
 
     #[test]
     fn test_colspec_regex_source() {
-        let c: ColSpec = "regex:_source:new:${number}:a(?P<number>[0-9]+)m"
-            .parse()
-            .unwrap();
+        let c = ColSpec::Regex {
+            source: "_source".to_string(),
+            colname: "new".to_string(),
+            coldef: "${number}".to_string(),
+            regex: Regex::new("a(?P<number>[0-9]+)m").unwrap(),
+        };
         let data = Row::from(vec!["a20m"]);
 
         assert_eq!(
@@ -191,7 +111,10 @@ mod tests {
 
     #[test]
     fn test_colspec_mix() {
-        let c: ColSpec = "value:new:{a}-{b}".parse().expect("could not parse");
+        let c = ColSpec::Mix {
+            colname: "new".to_string(),
+            coldef: "{a}-{b}".to_string(),
+        };
         let data = Row::from(vec!["2", "4"]);
 
         assert_eq!(

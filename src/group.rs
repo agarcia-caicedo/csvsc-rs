@@ -178,6 +178,7 @@ mod tests {
         Row, RowStream,
         mock::MockStream,
         error::Error,
+        ColSpec,
     };
     use super::Group;
 
@@ -216,7 +217,10 @@ mod tests {
             }
 
             MockStream::new(rows.into_iter(), headers)
-                .add(vec![format!("value:sum:{}", sum).parse().unwrap()])
+                .add(vec![ColSpec::Mix {
+                    colname: "sum".to_string(),
+                    coldef: sum.to_string(),
+                }])
                 .unwrap()
         }, &["name"]).unwrap();
 
@@ -283,7 +287,10 @@ mod tests {
             }
 
             MockStream::new(rows.into_iter(), headers)
-                .add(vec![format!("value:sum:{}", sum).parse().unwrap()])
+                .add(vec![ColSpec::Mix {
+                    colname: "sum".to_string(),
+                    coldef: sum.to_string(),
+                }])
                 .unwrap()
         }, &["name"]).unwrap();
 
@@ -333,7 +340,10 @@ mod tests {
 
         let re = Group::new(iter, |headers| headers, |row_stream| {
             row_stream
-                .add(vec!["value:sum:2".parse().unwrap()])
+                .add(vec![ColSpec::Mix {
+                    colname: "sum".to_string(),
+                    coldef: "2".to_string(),
+                }])
                 .unwrap()
         }, &["name"]).unwrap();
 
