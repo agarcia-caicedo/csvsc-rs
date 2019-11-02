@@ -1,22 +1,21 @@
 /*!
 
-`csvsc` es una biblioteca para construir procesadores de archivos csv.
+`csvsc` is a library for building csv file processors.
 
-Imagina que tienes N archivos csv con la misma estructura y quieres producir
-con ellos otros M archivos csv cuya información depende de alguna manera de los
-archivos originales. Para eso es csvcv. Con esta herramienta puedes construir
-una cadena de procesamiento que va a modificar cada registro de los archivos de
-entrada y generar nuevos archivos de salida con esas modificaciones.
+Imagine you have N csv files with the same structure and you want to use them to 
+make other M csv files whose information depends in some way on the original files.
+This is what csvcv is for. With this tool you can build a processing chain that will
+modify each of the input files and generate new output files with the modifications.
 
-# Modo de preparación
+# Preparation Mode
 
-Comienza un nuevo proyecto binario con cargo:
+Start a new binary project with cargo:
 
 ```text
 $ cargo new --bin miprocesadordecsv
 ```
 
-luego agrega `csvsc` y `encoding` como dependencia en `Cargo.toml`
+Add `csvsc` and `encoding` as a dependency in `Cargo.toml`
 
 ```toml
 [dependencies]
@@ -24,12 +23,12 @@ csvsc = { git = "https://github.com/categulario/csvsc-rs.git" }
 encoding = "*"
 ```
 
-y ahora construye tu cadena de procesamiento. En el siguiente ejemplo se
-construye una cadena de procesamiento con las siguientes características:
+Now build your processing chain. In this example, a processing
+chain is built with the following characteristics:
 
-1. toma como entrada los archivos `1.csv` y `2.csv` con codificación `UTF-8`,
-1. agrega una columna virtual `_target` que definirá el archivo de salida y que utiliza la columna `a` de los archivos de entrada en su definición,
-1. elimina la columna `b`.
+1. It takes files `1.csv` and `2.csv` as input with `UTF-8` encoding,
+2. adds virtual column `_target` which will define the output file and uses the `a` column of both input files in its definition,
+3. Eliminates column `b`.
 
 ```rust
 use csvsc::ColSpec;
@@ -65,14 +64,13 @@ fn main() {
 }
 ```
 
-Ejecutar este proyecto resultaría en una carpeta `output/` creada y dentro
-tantos archivos como diferentes valores haya en la columna `a`.
+Executing this project will lead to an `output/` folder being created and 
+inside there will be as many files as there are different values in column `a`
 
-Para saber qué métodos están disponibles en una cadena de procesamiento ve a la
-documentación de [RowStream](trait.RowStream.html).
+To know which methods are available in a processing chain, go to the [RowStream](trait.RowStream.html)
+documentation.
 
-Las columnas cuyos nombres comienzen con guión bajo no serán escritas en los
-archivos de salida.
+Columns with names that start with an underscore will not be written to the output files.
 */
 
 mod add;
@@ -110,11 +108,10 @@ pub use reduce::aggregate;
 /// Type alias of csv::StringRecord. Represents a row of data.
 pub type Row = csv::StringRecord;
 
-/// Una columna con este nombre será añadida a cada registro. Dicha columna
-/// tiene por valor la ruta absoluta al archivo de entrada y sirve para extraer
-/// información que pueda estar contenida por ejemplo en el nombre del archivo.
-///
-/// Es útil en combinación con el procesador [Add](struct.Add.html).
+/// A column with this name will be added to each record. The column will
+/// have as a value the absolute path to the input file and serves to extract 
+/// information that may be contained, for example, in the file name.
+/// It is useful in combination with the processor [Add](struct.Add.html).
 pub const SOURCE_FIELD: &'static str = "_source";
 
 /// Things that could go wrong while building a group or adjacent group
