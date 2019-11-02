@@ -114,7 +114,7 @@ pub trait RowStream: IntoIterator<Item = RowResult> {
         Inspect::new(self, f)
     }
 
-    /// Renombra algunas columnas
+    /// Renames some columns
     fn rename(self, name_map: &HashMap<&str, &str>) -> Rename<Self>
     where
         Self: Sized,

@@ -3,11 +3,11 @@ use regex::{Captures, Regex};
 
 use crate::{col, Row, Headers};
 
-/// Tipos de especificaciones disponibles para crear una nueva columna.
+///Types of specifications available to create a new column.
 #[derive(Debug)]
 pub enum ColSpec {
-    /// Construye una nueva columna basándose en una columna anterior, usando
-    /// una expresión regular para extraer información de la misma.
+    /// Creates a new column based on a previous column using a 
+    /// regular expression to extract information from it.
     Regex {
         source: String, // TODO replace this and other ones with &str
         colname: String,
@@ -15,10 +15,10 @@ pub enum ColSpec {
         regex: Regex,
     },
 
-    /// Crea una nueva columna mezclando columnas existentes mediante el uso de
-    /// una plantilla
+    /// Create a new column by mixing existing columns using
+    /// a template
     ///
-    /// E.g. suponiendo que existen las columnas `month` y `day`:
+    /// E.g. assuming that the `month` and` day` columns exist:
     ///
     /// ```rust
     /// use csvsc::ColSpec;
